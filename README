@@ -1,11 +1,12 @@
 At http://gpl.ea.com you can download some open-source packages in zip files.
 
 Deep inside some of these zip files is C++ code for the EASTL library, a
-replacement for the STL. I'm not sure if this is the complete library, but
-it seems to have all of the fundamentals.
+replacement for the STL. I'm not sure if these packages include the complete
+library, but it seems to have all of the fundamentals.
 
 This github project only exists to offer up these files in a more convenient
-way, under EA's original license.
+way, under the terms of EA's license. License terms can be found embedded in
+the source files.
 
 To learn more about EASTL, go here:
 http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html
