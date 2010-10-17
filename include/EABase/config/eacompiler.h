@@ -35,6 +35,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *-----------------------------------------------------------------------------
  * Currently supported defines include:
  *     EA_COMPILER_GNUC
+ *     EA_COMPILER_ARM
+ *     EA_COMPILER_EDG
  *     EA_COMPILER_SN
  *     EA_COMPILER_MSVC
  *     EA_COMPILER_METROWERKS
@@ -59,8 +61,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *     EA_COMPILER_NO_ARGUMENT_DEPENDENT_LOOKUP
  *     EA_COMPILER_NO_EXCEPTION_STD_NAMESPACE
  *     EA_COMPILER_NO_EXPLICIT_FUNCTION_TEMPLATE_ARGUMENTS
+ *     EA_COMPILER_NO_RTTI
  *     EA_COMPILER_NO_EXCEPTIONS
  *     EA_COMPILER_NO_UNWIND
+ *     EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+ *     EA_COMPILER_NO_STATIC_VARIABLE_INIT
+ *     EA_COMPILER_NO_STATIC_FUNCTION_INIT
  *
  *-----------------------------------------------------------------------------
  *
@@ -161,6 +167,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif
 
 
+    // EDG (EDG compiler front-end, used by other compilers such as SN)
+    #if defined(__EDG_VERSION__)
+        #define EA_COMPILER_EDG
+    #endif
+
+
     // SN
     #if defined(__SNC__) // SN Systems compiler 
         // Note that there are two versions of the SN compiler, one that is 
@@ -175,6 +187,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         // SN compiler may emulate other compilers, it doesn't act exactly 
         // the same.
         #define EA_COMPILER_SN
+    #endif
+
+
+    // Airplay SDK (third party mobile middleware compiler)
+    #if defined(__S3E__)
+        #define EA_COMPILER_NO_EXCEPTION_STD_NAMESPACE
     #endif
 
 
@@ -213,6 +231,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define EA_COMPILER_BORLANDC
         #define EA_COMPILER_VERSION __BORLANDC__
         #define EA_COMPILER_NAME "Borland C"
+      //#define EA_COMPILER_STRING (defined below)
 
         #if (__BORLANDC__ <= 0x0550)      // If Borland C++ Builder 4 and 5...
             #define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS
@@ -231,6 +250,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_COMPILER_VERSION __ICC
         #endif
         #define EA_COMPILER_NAME "Intel C++"
+      //#define EA_COMPILER_STRING (defined below)
 
         // Intel is based ont the EDG (Edison Design Group) front end and 
         // all recent versions are very compliant to the C++ standard.
@@ -245,6 +265,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_COMPILER_VERSION __CWCC__
         #endif
         #define EA_COMPILER_NAME "Metrowerks"
+      //#define EA_COMPILER_STRING (defined below)
 
         #if (__MWERKS__ <= 0x2407)  // If less than v7.x...
             #define EA_COMPILER_NO_MEMBER_FUNCTION_SPECIALIZATION
@@ -255,10 +276,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     // Microsoft VC++
-    #elif defined(_MSC_VER) // Microsoft compilers exist for at least the PC and XBox platforms.
+    #elif defined(_MSC_VER) && !(defined(__S3E__) && defined(__arm__)) // S3E is a mobile SDK which mistakenly masquerades as VC++ on ARM.
         #define EA_COMPILER_MSVC
         #define EA_COMPILER_VERSION _MSC_VER
         #define EA_COMPILER_NAME "Microsoft Visual C++"
+      //#define EA_COMPILER_STRING (defined below)
 
         #if (_MSC_VER <= 1200) // If VC6.x and earlier...
             #if (_MSC_VER < 1200)
@@ -306,18 +328,34 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
         #endif
 
+
+    // IBM
     #elif defined(__xlC__)
         #define EA_COMPILER_IBM
         #define EA_COMPILER_NAME "IBM XL C"
         #define EA_COMPILER_VERSION __xlC__
         #define EA_COMPILER_STRING "IBM XL C compiler, version " INTERNAL_STRINGIZE( __xlC__ )
 
+
+    // ARM compiler
+    #if defined(__ARMCC_VERSION)
+        // Note that this refers to the ARM compiler (armcc or armcpp), but there
+        // are other compilers that target ARM processors, such as GCC and Microsoft VC++.
+        // If you want to detect compiling for the ARM processor, check for EA_PROCESSOR_ARM
+        // being defined.
+        #define EA_COMPILER_ARM 
+        #define EA_COMPILER_VERSION __ARMCC_VERSION
+        #define EA_COMPILER_NAME    __CC_ARM
+      //#define EA_COMPILER_STRING (defined below)
+
+    #endif
+
+
     // Unknown
     #else // Else the compiler is unknown
 
         #define EA_COMPILER_VERSION 0
         #define EA_COMPILER_NAME "Unknown"
-        #define EA_COMPILER_STRING "Unknown compiler, version 0.0"
 
     #endif
 
@@ -339,6 +377,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif
     #ifndef EA_COMPILER_NO_MEMBER_TEMPLATE_SPECIALIZATION
         #define EA_COMPILER_MEMBER_TEMPLATE_SPECIALIZATION
+    #endif
+
+
+
+    // EA_COMPILER_NO_RTTI
+    //
+    // If EA_COMPILER_NO_RTTI is defined, then RTTI (run-time type information)
+    // is not available (possibly due to being disabled by the user).
+    //
+    #if defined(__SNC__) && !defined(__RTTI)
+        #define EA_COMPILER_NO_RTTI
+    #elif defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
+        #define EA_COMPILER_NO_RTTI
+    #elif defined(_MSC_VER) && !defined(_CPPRTTI)
+        #define EA_COMPILER_NO_RTTI
+    #elif defined(__MWERKS__)
+        #if !__option(RTTI)
+            #define EA_COMPILER_NO_RTTI
+        #endif
     #endif
 
 
@@ -379,6 +436,40 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define EA_COMPILER_NO_UNWIND
 
     #endif // EA_COMPILER_NO_EXCEPTIONS / EA_COMPILER_NO_UNWIND
+
+
+
+    // EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+    //
+    // If defined, then the compiler doesn't provide a Standard C++ library.
+    //
+    #if defined(EA_PLATFORM_ANDROID)
+        #define EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+    #endif
+
+
+    // EA_COMPILER_NO_STATIC_VARIABLE_INIT
+    //
+    // If defined, it means that global or static C++ variables will be 
+    // constructed. Not all compiler/platorm combinations support this. 
+    // User code that needs to be portable must avoid having C++ variables
+    // that construct before main. 
+    //
+    //#if defined(EA_PLATFORM_MOBILE)
+    //    #define EA_COMPILER_NO_STATIC_VARIABLE_INIT
+    //#endif
+
+
+
+    // EA_COMPILER_NO_STATIC_FUNCTION_INIT
+    //
+    // If defined, it means that functions marked as startup functions
+    // (e.g. __attribute__((constructor)) in GCC) are supported. It may
+    // be that some compiler/platform combinations don't support this.
+    //
+    //#if defined(XXX) // So far, all compiler/platforms we use support this.
+    //    #define EA_COMPILER_NO_STATIC_VARIABLE_INIT
+    //#endif
 
 
 

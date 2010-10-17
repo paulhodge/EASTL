@@ -41,7 +41,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *    EA_COMPILER_MANAGED_CPP
  *
  *    EA_ALIGN_OF()
- *    EA_PREFIX_ALIGN() / EA_POSTFIX_ALIGN()
+ *    EA_ALIGN() / EA_PREFIX_ALIGN() / EA_POSTFIX_ALIGN()
  *    EA_ALIGNED()
  *    EA_PACKED()
  *
@@ -50,7 +50,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *    EA_INIT_PRIORITY()
  *    EA_MAY_ALIAS()
  *    EA_ASSUME()
- *    EA_PURE()
+ *    EA_PURE
+ *    EA_WEAK
  *
  *    EA_WCHAR_T_NON_NATIVE
  *    EA_WCHAR_SIZE = <n bytes>
@@ -59,6 +60,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *    EA_DEPRECATED   / EA_PREFIX_DEPRECATED   / EA_POSTFIX_DEPRECATED
  *    EA_FORCE_INLINE / EA_PREFIX_FORCE_INLINE / EA_POSTFIX_FORCE_INLINE
  *    EA_NO_INLINE    / EA_PREFIX_NO_INLINE    / EA_POSTFIX_NO_INLINE
+ *    EA_NO_VTABLE    / EA_CLASS_NO_VTABLE     / EA_STRUCT_NO_VTABLE
  *    EA_PASCAL
  *    EA_PASCAL_FUNC()
  *    EA_SSE = [0 | 1]
@@ -66,6 +68,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *    EA_EXPORT
  *    EA_PRAGMA_ONCE_SUPPORTED
  *    EA_OVERRIDE
+ *    EA_SEALED
+ *    EA_ABSTRACT
  *
  *  Todo:
  *    Find a way to reliably detect wchar_t size at preprocessor time and 
@@ -105,7 +109,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #include <stddef.h>
     #endif
 
-    #if defined(__SNC__) || defined(EA_PLATFORM_PS3)      
+    #if defined(__SNC__) || defined(EA_PLATFORM_PS3) || defined(__S3E__)
         #ifndef __STDC_LIMIT_MACROS
             #define __STDC_LIMIT_MACROS
         #endif
@@ -116,8 +120,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
         #include <stdint.h>
 
-        #ifndef EA_COMPILER_HAS_INTTYPES
-            #define EA_COMPILER_HAS_INTTYPES
+        #if !defined(EA_COMPILER_HAS_INTTYPES)
+            #if !defined(__S3E__)
+                #define EA_COMPILER_HAS_INTTYPES
+            #endif
         #endif
     #endif
 
@@ -188,27 +194,32 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // alignment expressions
     //
     // Here we define
-    //    EA_ALIGN_OF(type)    // Returns size_t.
-    //    EA_PREFIX_ALIGN(n)   // n is byte alignment, with being a power of two.
-    //    EA_POSTFIX_ALIGN(n)  // Valid values for n are 1, 2, 4, 8, etc.
-    //    EA_ALIGNED(t, v, n)  // Type, variable, alignment.
-    //    EA_PACKED            // Specifies that the given structure be packed (and not have its members aligned).
+    //    EA_ALIGN_OF(type)         // Returns size_t.
+    //    EA_ALIGN(n)               // Used as a prefix. n is byte alignment, with being a power of two. Most of the time you can use this and avoid using EA_PREFIX_ALIGN/EA_POSTFIX_ALIGN.
+    //    EA_PREFIX_ALIGN(n)        // n is byte alignment, with being a power of two. You should need this only for unusual compilers.
+    //    EA_POSTFIX_ALIGN(n)       // Valid values for n are 1, 2, 4, 8, etc. You should need this only for unusual compilers.
+    //    EA_ALIGNED(t, v, n)       // Type, variable, alignment. Used to align an instance. You should need this only for unusual compilers.
+    //    EA_PACKED                 // Specifies that the given structure be packed (and not have its members aligned).
     //
     // Example usage:
-    //    size_t x = EA_ALIGN_OF(int);                      // Non-aligned equivalents.
-    //    EA_PREFIX_ALIGN(4) int x = 5;                     int x = 5;
-    //    int x EA_POSTFIX_ALIGN(8);                        int x;
-    //    int x EA_POSTFIX_ALIGN(8) = 5;                    int x = 5;
-    //    int x EA_POSTFIX_ALIGN(8)(5);                     int x(5);
-    //    EA_ALIGNED(int, x, 8) = 5;                        int x = 5;
-    //    EA_ALIGNED(int, x, 16)(5);                        int x(5);
-    //    EA_ALIGNED(int, x[3], 16);                        int x[3];
-    //    EA_ALIGNED(int, x[3], 16) = { 1, 2, 3 };          int x[3] = { 1, 2, 3 };
-    //    int x[3] EA_PACKED;                               int x[3];
-    //    struct X { int x EA_PACKED; int y EA_PACKED; };   struct X { int x; int y; };
-    //    struct X { int x; int y; } EA_PACKED;             struct X { int x; int y; };
-    //    typedef EA_ALIGNED(int, int16, 16); int16 n16;    typedef int int16; int16 n16;
-    //    typedef EA_ALIGNED(X, X16, 16); X16 x16;          typedef X X16; X16 x16;
+    //    size_t x = EA_ALIGN_OF(int);                                  Non-aligned equivalents.        Meaning
+    //    EA_PREFIX_ALIGN(8) int x = 5;                                 int x = 5;                      Align x on 8 for compilers that require prefix attributes. Can just use EA_ALIGN instead.
+    //    EA_ALIGN(8) int x;                                            int x;                          Align x on 8 for compilers that allow prefix attributes.
+    //    int x EA_POSTFIX_ALIGN(8);                                    int x;                          Align x on 8 for compilers that require postfix attributes.
+    //    int x EA_POSTFIX_ALIGN(8) = 5;                                int x = 5;                      Align x on 8 for compilers that require postfix attributes.
+    //    int x EA_POSTFIX_ALIGN(8)(5);                                 int x(5);                       Align x on 8 for compilers that require postfix attributes.
+    //    struct EA_PREFIX_ALIGN(8) X { int x; } EA_POSTFIX_ALIGN(8);   struct X { int x; };            Define X as a struct which is aligned on 8 when used.
+    //    EA_ALIGNED(int, x, 8) = 5;                                    int x = 5;                      Align x on 8.
+    //    EA_ALIGNED(int, x, 16)(5);                                    int x(5);                       Align x on 16.
+    //    EA_ALIGNED(int, x[3], 16);                                    int x[3];                       Align x array on 16.
+    //    EA_ALIGNED(int, x[3], 16) = { 1, 2, 3 };                      int x[3] = { 1, 2, 3 };         Align x array on 16.
+    //    int x[3] EA_PACKED;                                           int x[3];                       Pack the 3 ints of the x array. GCC doesn't seem to support packing of int arrays.
+    //    struct EA_ALIGN(32) X { int x; int y; };                      struct X { int x; };            Define A as a struct which is aligned on 32 when used.
+    //    EA_ALIGN(32) struct X { int x; int y; } Z;                    struct X { int x; } Z;          Define A as a struct, and align the instance Z on 32.
+    //    struct X { int x EA_PACKED; int y EA_PACKED; };               struct X { int x; int y; };     Pack the x and y members of struct X.
+    //    struct X { int x; int y; } EA_PACKED;                         struct X { int x; int y; };     Pack the members of struct X.
+    //    typedef EA_ALIGNED(int, int16, 16); int16 n16;                typedef int int16; int16 n16;   Define int16 as an int which is aligned on 16.
+    //    typedef EA_ALIGNED(X, X16, 16); X16 x16;                      typedef X X16; X16 x16;         Define X16 as an X which is aligned on 16.
 
     // SNC (EDG) intends to be compatible with GCC but has a bug whereby it 
     // fails to support calling a constructor in an aligned declaration when 
@@ -216,28 +227,37 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // the size like postfix does.  Prefix also fails on templates.  So gcc style post fix
     // is still used, but the user will need to use EA_POSTFIX_ALIGN before the constructor parameters.
     // this note by Paul and Frank
-    #if defined(EA_COMPILER_SN) && defined(EA_COMPILER_GNUC)  // If using the SN compiler in GCC compatibility mode...
+    #if defined(EA_COMPILER_SN) && defined(__GNUC__)  // If using the SN compiler in GCC compatibility mode...
         #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+        #define EA_ALIGN(n) __attribute__((aligned(n)))
         #define EA_PREFIX_ALIGN(n) 
         #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
         #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
         #define EA_PACKED __attribute__((packed))
 
-    // GCC officially supports postfix alignment attributes, but seems to have 
-    // support for prefix alignment as well. We intentionally define only one of 
-    // these so that those interested in writing portable code can use both without
-    // causing problems.
-    #elif defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 2)
+    // GCC 2.x doesn't support prefix attributes.
+    #elif defined(__GNUC__) && (__GNUC__ < 3)
         #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+        #define EA_ALIGN(n)
         #define EA_PREFIX_ALIGN(n)
         #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
         #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
         #define EA_PACKED __attribute__((packed))
 
-    // Metrowerks supports postfix alignment attributes, but not prefix attributes.
+    // GCC 3.x+ and IBM C support prefix attributes.
+    #elif (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__xlC__)
+        #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+        #define EA_ALIGN(n) __attribute__((aligned(n)))
+        #define EA_PREFIX_ALIGN(n)
+        #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
+        #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
+        #define EA_PACKED __attribute__((packed))
+
+    // Metrowerks supports prefix attributes.
     // Metrowerks does not support packed alignment attributes.
     #elif defined(EA_COMPILER_METROWERKS)
         #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+        #define EA_ALIGN(n) __attribute__((aligned(n)))
         #define EA_PREFIX_ALIGN(n)
         #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
         #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
@@ -245,22 +265,33 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     // Microsoft supports prefix alignment via __declspec, but the alignment value must be a literal number, not just a constant expression.
     // Contrary to VC7.x and earlier documentation, __declspec(align) works on stack variables. VC8+ (VS2005+) documents correctly.
-    // Microsoft does not support packed alignment attributes; you must use #pramga pack.
-    #elif defined(EA_COMPILER_INTEL) || defined(EA_PLATFORM_XBOX) || (defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1300)) // Verified by Paul Pedriana for VC6, VC7.0, and VC7.1.
+    // Microsoft does not support packed alignment attributes; you must use #pragma pack.
+    #elif defined(EA_COMPILER_INTEL) || defined(EA_PLATFORM_XBOX) || (defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1300))
         #define EA_ALIGN_OF(type) ((size_t)__alignof(type))
+        #define EA_ALIGN(n) __declspec(align(n))
         #define EA_PREFIX_ALIGN(n) __declspec(align(n))
         #define EA_POSTFIX_ALIGN(n)
         #define EA_ALIGNED(variable_type, variable, n) __declspec(align(n)) variable_type variable
         #define EA_PACKED
+
+    // Arm brand compiler
+    #elif defined(__ARMCC_VERSION)
+        #define EA_ALIGN_OF(type) ((size_t)__ALIGNOF__(type))
+        #define EA_ALIGN(n) __align(n)
+        #define EA_PREFIX_ALIGN(n) __align(n)
+        #define EA_POSTFIX_ALIGN(n)
+        #define EA_ALIGNED(variable_type, variable, n) __align(n) variable_type variable
+        #define EA_PACKED __packed
 
     #else // Unusual compilers
         // There is nothing we can do about some of these. This is not as bad a problem as it seems.
         // If the given platform/compiler doesn't support alignment specifications, then it's somewhat
         // likely that alignment doesn't matter for that platform. Otherwise they would have defined 
         // functionality to manipulate alignment.
+        #define EA_ALIGN(n)
         #define EA_PREFIX_ALIGN(n)
         #define EA_POSTFIX_ALIGN(n)
-        #define EA_ALIGNED(variable_type, variable, n)
+        #define EA_ALIGNED(variable_type, variable, n) variable_type variable
         #define EA_PACKED
 
         #ifdef __cplusplus
@@ -304,9 +335,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //       { ... }
     //
     #ifndef EA_LIKELY
-        #if defined(__GNUC__) && (__GNUC__ >= 3)
-            #define EA_LIKELY(x)   __builtin_expect(!!(x), true)
-            #define EA_UNLIKELY(x) __builtin_expect(!!(x), false) 
+        #if (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__MWERKS__) // Metrowerks supports __builtin_expect, but with some platforms (e.g. Wii) it appears to ignore it.
+            #if defined(__cplusplus)
+                #define EA_LIKELY(x)   __builtin_expect(!!(x), true)
+                #define EA_UNLIKELY(x) __builtin_expect(!!(x), false) 
+            #else
+                #define EA_LIKELY(x)   __builtin_expect(!!(x), 1)
+                #define EA_UNLIKELY(x) __builtin_expect(!!(x), 0) 
+            #endif
         #else
             #define EA_LIKELY(x)   (x)
             #define EA_UNLIKELY(x) (x)
@@ -402,13 +438,52 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // multiple invocations and thus can be pulled out of a loop and called but once.
     //
     // Example usage:
-    //    void Function() EA_PURE;
+    //    EA_PURE void Function();
     //
     #ifndef EA_PURE
         #if defined(EA_COMPILER_GNUC)
             #define EA_PURE __attribute__((pure))
+        #elif defined(__ARMCC_VERSION)  // Arm brand compiler for ARM CPU
+            #define EA_PURE __pure
         #else
             #define EA_PURE
+        #endif
+    #endif
+
+
+
+    // ------------------------------------------------------------------------
+    // EA_WEAK
+    // EA_WEAK_SUPPORTED -- defined as 0 or 1.
+    // 
+    // GCC
+    // The weak attribute causes the declaration to be emitted as a weak
+    // symbol rather than a global. This is primarily useful in defining
+    // library functions which can be overridden in user code, though it
+    // can also be used with non-function declarations.
+    //
+    // VC++
+    // At link time, if multiple definitions of a COMDAT are seen, the linker 
+    // picks one and discards the rest. If the linker option /OPT:REF 
+    // is selected, then COMDAT elimination will occur to remove all the 
+    // unreferenced data items in the linker output.
+    //
+    // Example usage:
+    //    EA_WEAK void Function();
+    //
+    #ifndef EA_WEAK
+        #if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later (including XBox)...
+            #define EA_WEAK __declspec(selectany)
+            #define EA_WEAK_SUPPORTED 1
+        #elif defined(_MSC_VER) || (defined(__GNUC__) && defined(__CYGWIN__))
+            #define EA_WEAK
+            #define EA_WEAK_SUPPORTED 0
+        #elif defined(__ARMCC_VERSION)  // Arm brand compiler for ARM CPU
+            #define EA_WEAK __weak
+            #define EA_WEAK_SUPPORTED 1
+        #else                           // GCC and IBM compilers, others.
+            #define EA_WEAK __attribute__((weak))
+            #define EA_WEAK_SUPPORTED 1
         #endif
     #endif
 
@@ -459,12 +534,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #else
                 #define EA_WCHAR_SIZE 4
             #endif
-        #elif defined(WCHAR_MAX) // The SN compiler defines this.
+        #elif defined(WCHAR_MAX) // The SN and Arm compilers define this.
             #if (WCHAR_MAX == 2147483647) || (WCHAR_MAX == 4294967295)
                 #define EA_WCHAR_SIZE 4
             #elif (WCHAR_MAX == 32767) || (WCHAR_MAX == 65535)
                 #define EA_WCHAR_SIZE 2
             #elif (WCHAR_MAX == 127) || (WCHAR_MAX == 255)
+                #define EA_WCHAR_SIZE 1
+            #else
+                #define EA_WCHAR_SIZE 4
+            #endif
+        #elif defined(_WCMAX) // The SN and Arm compilers define this.
+            #if (_WCMAX == 2147483647) || (_WCMAX == 4294967295)
+                #define EA_WCHAR_SIZE 4
+            #elif (_WCMAX == 32767) || (_WCMAX == 65535)
+                #define EA_WCHAR_SIZE 2
+            #elif (_WCMAX == 127) || (_WCMAX == 255)
                 #define EA_WCHAR_SIZE 1
             #else
                 #define EA_WCHAR_SIZE 4
@@ -505,6 +590,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_RESTRICT __restrict
         #elif defined(EA_COMPILER_GNUC)
             #define EA_RESTRICT __restrict // GCC defines 'restrict' (as opposed to __restrict) in C99 mode only.
+        #elif defined(__ARMCC_VERSION)
+            #define EA_RESTRICT __restrict
         #elif defined(__MWERKS__)
             #if __option(c99)
                 #define EA_RESTRICT restrict
@@ -524,61 +611,57 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     // ------------------------------------------------------------------------
-    // EA_DEPRECATED / EA_PREFIX_DEPRECATED / EA_POSTFIX_DEPRECATED
-    // 
-    // We have a problem here because some compilers (e.g. MSVC) define this
-    // as a prefix statement but some compilers (e.g. GNUC) define this as
-    // a postfix statement. This still needs to be resolved in a portable way.
+    // EA_DEPRECATED            // Used as a prefix.
+    // EA_PREFIX_DEPRECATED     // You should need this only for unusual compilers.
+    // EA_POSTFIX_DEPRECATED    // You should need this only for unusual compilers.
     // 
     // Example usage:
-    //    EA_DEPRECATED void Function(); // VC++
-    //    void Function() EA_DEPRECATED; // GCC
+    //    EA_DEPRECATED void Function();
     //
-    // or for portability:
+    // or for maximum portability:
     //    EA_PREFIX_DEPRECATED void Function() EA_POSTFIX_DEPRECATED;
     //
     #ifndef EA_DEPRECATED
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION > 1300)
+        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION > 1300) // If VC7 (VS2003) or later...
             #define EA_DEPRECATED __declspec(deprecated)
-        #elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301) && !defined(__SNC__) // GCC 3.1 or later
-            #define EA_DEPRECATED __attribute__((deprecated))
+        #elif defined(EA_COMPILER_MSVC)
+            #define EA_DEPRECATED 
         #else
-            #define EA_DEPRECATED
+            #define EA_DEPRECATED __attribute__((deprecated))
         #endif
     #endif
 
     #ifndef EA_PREFIX_DEPRECATED
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION > 1300)
+        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION > 1300) // If VC7 (VS2003) or later...
             #define EA_PREFIX_DEPRECATED __declspec(deprecated)
             #define EA_POSTFIX_DEPRECATED
-        #elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301) && !defined(__SNC__) // GCC 3.1 or later
-            #define EA_PREFIX_DEPRECATED
-            #define EA_POSTFIX_DEPRECATED __attribute__((deprecated))
-        #else
+        #elif defined(EA_COMPILER_MSVC)
             #define EA_PREFIX_DEPRECATED
             #define EA_POSTFIX_DEPRECATED
+        #else
+            #define EA_PREFIX_DEPRECATED
+            #define EA_POSTFIX_DEPRECATED __attribute__((deprecated))
         #endif
     #endif
 
 
     // ------------------------------------------------------------------------
-    // EA_FORCE_INLINE / EA_PREFIX_FORCE_INLINE / EA_POSTFIX_FORCE_INLINE
+    // EA_FORCE_INLINE              // Used as a prefix.
+    // EA_PREFIX_FORCE_INLINE       // You should need this only for unusual compilers.
+    // EA_POSTFIX_FORCE_INLINE      // You should need this only for unusual compilers.
     //
     // Example usage:
-    //     EA_FORCE_INLINE        void Foo(){ }
+    //     EA_FORCE_INLINE void Foo();                                // Implementation elsewhere.
     //     EA_PREFIX_FORCE_INLINE void Foo() EA_POSTFIX_FORCE_INLINE; // Implementation elsewhere.
     //
     // Note that when the prefix version of this function is used, it replaces
     // the regular C++ 'inline' statement. Thus you should not use both the 
     // C++ inline statement and this macro with the same function declaration.
     //
-    // To force inline usage under VC++, you use this:
-    //    __forceinline void Foo(){ ... }
-    //
     // To force inline usage under GCC 3.1+, you use this:
-    //    inline void Foo() __attribute__((always_inline)) { ... }
+    //    inline void Foo() __attribute__((always_inline));
     //       or
-    //    inline __attribute__((always_inline)) void Foo() { ... }
+    //    inline __attribute__((always_inline)) void Foo();
     //
     // The CodeWarrior compiler doesn't have the concept of forcing inlining per function.
     // 
@@ -600,17 +683,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #endif
     #endif
 
-    #if defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
-        #define EA_PREFIX_FORCE_INLINE
-        #define EA_POSTFIX_FORCE_INLINE EA_FORCE_INLINE
+    #if defined(EA_COMPILER_SN) && defined(EA_PLATFORM_PS3) // SN's implementation of always_inline is broken and sometimes fails to link the function.
+        #define EA_PREFIX_FORCE_INLINE  inline
+        #define EA_POSTFIX_FORCE_INLINE 
+    #elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
+        #define EA_PREFIX_FORCE_INLINE  inline
+        #define EA_POSTFIX_FORCE_INLINE __attribute__((always_inline))
     #else
-        #define EA_PREFIX_FORCE_INLINE EA_FORCE_INLINE
-        #define EA_POSTFIX_FORCE_INLINE
+        #define EA_PREFIX_FORCE_INLINE  inline
+        #define EA_POSTFIX_FORCE_INLINE 
     #endif
 
 
     // ------------------------------------------------------------------------
-    // EA_NO_INLINE / EA_PREFIX_NO_INLINE / EA_POSTFIX_NO_INLINE
+    // EA_NO_INLINE             // Used as a prefix. 
+    // EA_PREFIX_NO_INLINE      // You should need this only for unusual compilers.
+    // EA_POSTFIX_NO_INLINE     // You should need this only for unusual compilers.
     //
     // Example usage:
     //     EA_NO_INLINE        void Foo();                       // Implementation elsewhere.
@@ -624,13 +712,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //    void Foo() { ... }
     //    #pragma inline_depth()  // Restore to default.
     //
-    // To disable inline usage under GCC 3+, you use this:
-    //    void Foo() __attribute__((noinline)) { ... }
-    //       or
-    //    inline __attribute__((noinline)) void Foo() { ... }
-    //
-    // The CodeWarrior compiler doesn't have the ability to specify per-function 'no inlining'
-    // 
     // Since there is no easy way to disable inlining on a function-by-function
     // basis in VC++ prior to VS2005, the best strategy is to write platform-specific 
     // #ifdefs in the code or to disable inlining for a given module and enable 
@@ -639,19 +720,45 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #ifndef EA_NO_INLINE
         #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // If VC8 (VS2005) or later...
             #define EA_NO_INLINE __declspec(noinline)
-        #elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
-            #define EA_NO_INLINE __attribute__((noinline))
-        #else
+        #elif defined(EA_COMPILER_MSVC)
             #define EA_NO_INLINE
+        #else
+            #define EA_NO_INLINE __attribute__((noinline))
         #endif
     #endif
 
-    #if defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
-        #define EA_PREFIX_NO_INLINE
-        #define EA_POSTFIX_NO_INLINE EA_NO_INLINE
-    #else
-        #define EA_PREFIX_NO_INLINE  EA_NO_INLINE
+    #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // If VC8 (VS2005) or later...
+        #define EA_PREFIX_NO_INLINE  __declspec(noinline)
         #define EA_POSTFIX_NO_INLINE
+    #elif defined(EA_COMPILER_MSVC)
+        #define EA_PREFIX_NO_INLINE
+        #define EA_POSTFIX_NO_INLINE
+    #else
+        #define EA_PREFIX_NO_INLINE
+        #define EA_POSTFIX_NO_INLINE __attribute__((noinline))
+    #endif
+
+
+    // ------------------------------------------------------------------------
+    // EA_NO_VTABLE
+    //
+    // Example usage:
+    //     class EA_NO_VTABLE X {
+    //        virtual void InterfaceFunction();
+    //     };
+    // 
+    //     EA_CLASS_NO_VTABLE(X) {
+    //        virtual void InterfaceFunction();
+    //     };
+    //
+    #ifdef EA_COMPILER_MSVC
+        #define EA_NO_VTABLE           __declspec(novtable)
+        #define EA_CLASS_NO_VTABLE(x)  class __declspec(novtable) x
+        #define EA_STRUCT_NO_VTABLE(x) struct __declspec(novtable) x
+    #else
+        #define EA_NO_VTABLE
+        #define EA_CLASS_NO_VTABLE(x)  class x
+        #define EA_STRUCT_NO_VTABLE(x) struct x
     #endif
 
 
@@ -676,7 +783,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_PASCAL __stdcall
         #elif defined(EA_COMPILER_GNUC) && defined(EA_PROCESSOR_X86)
             #define EA_PASCAL __attribute__((stdcall))
-        #elif defined(EA_COMPILER_METROWERKS)
+        #elif defined(EA_COMPILER_METROWERKS) && defined(EA_PLATFORM_WINDOWS)
             // You need to make sure you have the Metrowerks "ANSI keywords only' 
             // compilation option disabled for the pascal keyword to work.
             #define EA_PASCAL   pascal
@@ -693,10 +800,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #if defined(EA_COMPILER_MSVC)
             #define EA_PASCAL_FUNC(funcname_and_paramlist)    __stdcall funcname_and_paramlist
         #elif defined(EA_COMPILER_GNUC) && defined(EA_PROCESSOR_X86)
-            // TODO: This is ignored on all the compilers we've tried:
-            // #define EA_PASCAL_FUNC(funcname_and_paramlist) __attribute__((stdcall))  funcname_and_paramlist
-            #define EA_PASCAL_FUNC(funcname_and_paramlist)    funcname_and_paramlist
-        #elif defined(EA_COMPILER_METROWERKS)
+            #define EA_PASCAL_FUNC(funcname_and_paramlist)    __attribute__((stdcall)) funcname_and_paramlist
+        #elif defined(EA_COMPILER_METROWERKS) && defined(EA_PLATFORM_WINDOWS)
             #define EA_PASCAL_FUNC(funcname_and_paramlist)    pascal funcname_and_paramlist
         #else
             #define EA_PASCAL_FUNC(funcname_and_paramlist)    funcname_and_paramlist
@@ -710,7 +815,17 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // Intel C also has SSE support.
     // EA_SSE is used to select FPU or SSE versions in hw_select.inl
     #ifndef EA_SSE
-        #if (defined(_MSC_FULL_VER) || defined(EA_COMPILER_INTEL)) && !defined(__NOSSE__)
+        #if defined(EA_COMPILER_GNUC)
+            #if defined(__SSE2__)
+                #define EA_SSE 2
+            #elif defined(__SSE__) && __SSE__
+                #define EA_SSE 1
+            #else
+                #define EA_SSE 0
+            #endif
+        #elif defined(EA_PROCESSOR_X86) && defined(_MSC_FULL_VER) && !defined(__NOSSE__) && defined(_M_IX86_FP)
+            #define EA_SSE _M_IX86_FP 
+        #elif defined(EA_PROCESSOR_X86) && defined(EA_COMPILER_INTEL) && !defined(__NOSSE__)
             #define EA_SSE 1
         #else
             #define EA_SSE 0
@@ -778,18 +893,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // ------------------------------------------------------------------------
     // EA_OVERRIDE
     // 
-    // Indicates that a member of a class must override a base class member. 
-    // If there is no member to override or the base class differs 
-    // from the override, the compiler will generate an error.
-    //
-    // Example usage:
-    //     struct Base {   virtual void f();  };
-    //     struct Deriv : public Base { virtual void f() EA_OVERRIDE {} };
-    // 
-    // Example usage which has the intended effect of generating an error:
-    //     struct Base {   virtual void f( bool new_param);  };
-    //     struct Deriv : public Base { virtual void f() EA_OVERRIDE {} };
-    // 
     //  See http://msdn.microsoft.com/en-us/library/41w3sh1c.aspx for more information.
     // 
     #ifndef EA_OVERRIDE
@@ -797,6 +900,34 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_OVERRIDE override
         #else
             #define EA_OVERRIDE 
+        #endif
+    #endif
+
+
+    // ------------------------------------------------------------------------
+    // EA_SEALED
+    // 
+    // See http://msdn.microsoft.com/en-us/library/49k3w2fx%28VS.71%29.aspx for more information.
+    // 
+    #ifndef EA_SEALED
+        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // VS2005 (VC8) and later
+            #define EA_SEALED sealed
+        #else
+            #define EA_SEALED 
+        #endif
+    #endif
+
+
+    // ------------------------------------------------------------------------
+    // EA_ABSTRACT
+    // 
+    // See http://msdn.microsoft.com/en-us/library/49k3w2fx%28VS.71%29.aspx for more information.
+    // 
+    #ifndef EA_ABSTRACT
+        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // VS2005 (VC8) and later
+            #define EA_ABSTRACT abstract
+        #else
+            #define EA_ABSTRACT 
         #endif
     #endif
 

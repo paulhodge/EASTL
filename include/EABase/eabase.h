@@ -77,8 +77,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EABASE_VERSION
-    #define EABASE_VERSION   "2.00.17"
-    #define EABASE_VERSION_N  20017
+    #define EABASE_VERSION   "2.00.22"
+    #define EABASE_VERSION_N  20022
 #endif
 
 
@@ -171,7 +171,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     // MinGW GCC (up to at least v4.3.0-20080502) mistakenly neglects to define float_t and double_t.
     // This appears to be an acknowledged bug as of March 2008 and is scheduled to be fixed.
-    #if defined(__MINGW32__)
+    // Similarly, Android uses a mix of custom standard library headers which don't define float_t and double_t.
+    #if defined(__MINGW32__) || defined(EA_PLATFORM_ANDROID)
         #if defined(__FLT_EVAL_METHOD__)  
             #if(__FLT_EVAL_METHOD__== 0)
                 typedef float float_t;
@@ -184,28 +185,127 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 typedef long double double_t;
             #endif
         #else
-            typedef long double float_t;
-            typedef long double double_t;
+            typedef float  float_t;
+            typedef double double_t;
         #endif
     #endif 
 
+    // Airplay's pretty broken for these types (at least as of 4.1)
+    #if defined __S3E__
 
+        typedef float float_t;
+        typedef double double_t;
+
+        #undef INT32_C
+        #undef UINT32_C
+        #undef INT64_C
+        #undef UINT64_C
+        #define  INT32_C(x)  x##L
+        #define UINT32_C(x)  x##UL
+        #define  INT64_C(x)  x##LL
+        #define UINT64_C(x)  x##ULL
+
+        #define EA_PRI_64_LENGTH_SPECIFIER "ll"
+        #define EA_SCN_64_LENGTH_SPECIFIER "ll"
+
+        #define SCNd16        "hd"
+        #define SCNi16        "hi"
+        #define SCNo16        "ho"
+        #define SCNu16        "hu"
+        #define SCNx16        "hx"
+
+        #define SCNd32        "d" // This works for both 32 bit and 64 bit systems, as we assume LP64 conventions.
+        #define SCNi32        "i"
+        #define SCNo32        "o"
+        #define SCNu32        "u"
+        #define SCNx32        "x"
+
+        #define SCNd64        EA_SCN_64_LENGTH_SPECIFIER "d"
+        #define SCNi64        EA_SCN_64_LENGTH_SPECIFIER "i"
+        #define SCNo64        EA_SCN_64_LENGTH_SPECIFIER "o"
+        #define SCNu64        EA_SCN_64_LENGTH_SPECIFIER "u"
+        #define SCNx64        EA_SCN_64_LENGTH_SPECIFIER "x"
+
+        #define PRIdPTR       PRId32 // Usage of pointer values will generate warnings with 
+        #define PRIiPTR       PRIi32 // some compilers because they are defined in terms of 
+        #define PRIoPTR       PRIo32 // integers. However, you can't simply use "p" because
+        #define PRIuPTR       PRIu32 // 'p' is interpreted in a specific and often different
+        #define PRIxPTR       PRIx32 // way by the library.
+        #define PRIXPTR       PRIX32
+
+        #define PRId8     "hhd"
+        #define PRIi8     "hhi"
+        #define PRIo8     "hho"
+        #define PRIu8     "hhu"
+        #define PRIx8     "hhx"
+        #define PRIX8     "hhX"
+
+        #define PRId16        "hd"
+        #define PRIi16        "hi"
+        #define PRIo16        "ho"
+        #define PRIu16        "hu"
+        #define PRIx16        "hx"
+        #define PRIX16        "hX"
+
+        #define PRId32        "d" // This works for both 32 bit and 64 bit systems, as we assume LP64 conventions.
+        #define PRIi32        "i"
+        #define PRIo32        "o"
+        #define PRIu32        "u"
+        #define PRIx32        "x"
+        #define PRIX32        "X"
+
+        #define PRId64        EA_PRI_64_LENGTH_SPECIFIER "d"
+        #define PRIi64        EA_PRI_64_LENGTH_SPECIFIER "i"
+        #define PRIo64        EA_PRI_64_LENGTH_SPECIFIER "o"
+        #define PRIu64        EA_PRI_64_LENGTH_SPECIFIER "u"
+        #define PRIx64        EA_PRI_64_LENGTH_SPECIFIER "x"
+        #define PRIX64        EA_PRI_64_LENGTH_SPECIFIER "X"
+    #endif
+
+    // The CodeSourcery definitions of PRIxPTR and SCNxPTR are broken for 32 bit systems.
+    #if defined(__SIZEOF_SIZE_T__) && (__SIZEOF_SIZE_T__ == 4) && (defined(__have_long64) || defined(__have_longlong64) || defined(__S3E__))
+        #undef  PRIdPTR
+        #define PRIdPTR "d"
+        #undef  PRIiPTR
+        #define PRIiPTR "i"
+        #undef  PRIoPTR
+        #define PRIoPTR "o"
+        #undef  PRIuPTR
+        #define PRIuPTR "u"
+        #undef  PRIxPTR
+        #define PRIxPTR "x"
+        #undef  PRIXPTR
+        #define PRIXPTR "X"
+
+        #undef  SCNdPTR
+        #define SCNdPTR "d"
+        #undef  SCNiPTR
+        #define SCNiPTR "i"
+        #undef  SCNoPTR
+        #define SCNoPTR "o"
+        #undef  SCNuPTR
+        #define SCNuPTR "u"
+        #undef  SCNxPTR
+        #define SCNxPTR "x"
+    #endif
 #else // else we must implement types ourselves.
 
-   #if !defined(__BIT_TYPES_DEFINED__) && !defined(__int8_t_defined)
-      typedef signed char             int8_t;             //< 8 bit signed integer
-   #endif
-   #if !defined( __int8_t_defined )
-      typedef signed short            int16_t;            //< 16 bit signed integer
-      typedef signed int              int32_t;            //< 32 bit signed integer. This works for both 32 bit and 64 bit platforms, as we assume the LP64 is followed.
-      #define __int8_t_defined
-   #endif
-      typedef unsigned char           uint8_t;            //< 8 bit unsigned integer
-      typedef unsigned short         uint16_t;            //< 16 bit unsigned integer
-   #if !defined( __uint32_t_defined )
-      typedef unsigned int           uint32_t;            //< 32 bit unsigned integer. This works for both 32 bit and 64 bit platforms, as we assume the LP64 is followed.
-      #define __uint32_t_defined
-   #endif
+    #if !defined(__S3E__)
+        #if !defined(__BIT_TYPES_DEFINED__) && !defined(__int8_t_defined)
+            typedef signed char             int8_t;             //< 8 bit signed integer
+        #endif
+        #if !defined( __int8_t_defined )
+            typedef signed short            int16_t;            //< 16 bit signed integer
+            typedef signed int              int32_t;            //< 32 bit signed integer. This works for both 32 bit and 64 bit platforms, as we assume the LP64 is followed.
+            #define __int8_t_defined
+        #endif
+            typedef unsigned char           uint8_t;            //< 8 bit unsigned integer
+            typedef unsigned short         uint16_t;            //< 16 bit unsigned integer
+        #if !defined( __uint32_t_defined )
+            typedef unsigned int           uint32_t;            //< 32 bit unsigned integer. This works for both 32 bit and 64 bit platforms, as we assume the LP64 is followed.
+            #define __uint32_t_defined
+        #endif
+    #endif
 
     // According to the C98/99 standard, FLT_EVAL_METHOD defines control the 
     // width used for floating point _t types.
@@ -250,6 +350,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            typedef long long           int64_t;
            typedef unsigned long long  uint64_t;
        #endif
+   #elif defined(EA_PLATFORM_AIRPLAY)
    #else
        typedef signed long long    int64_t;
        typedef unsigned long long  uint64_t;
@@ -563,9 +664,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // so for all compilers, as size_t may be based on int, long, or long long.
     #if defined(_MSC_VER) && (EA_PLATFORM_PTR_SIZE == 8)
         typedef __int64 ssize_t;
-    #else
+    #elif !defined(__S3E__)
         typedef long ssize_t;
     #endif
+#elif defined(EA_PLATFORM_UNIX) || defined(EA_PLATFORM_MINGW) || defined(__APPLE__) || defined(_BSD_SIZE_T_) // _BSD_SIZE_T_ indicates that Unix-like headers are present, even though it may not be a true Unix platform.
+    #include <sys/types.h>
 #endif
 
 
@@ -602,10 +705,52 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //             set to be the same thing as wchar_t in order to allow the 
 //             user to use char32_t with standard wchar_t functions.
 //
+// VS2010 unilaterally defines char16_t and char32_t in its yvals.h header
+// unless _HAS_CHAR16_T_LANGUAGE_SUPPORT or _CHAR16T are defined. 
+// However, VS2010 does not support the C++0x u"" and U"" string literals, 
+// which makes its definition of char16_t and char32_t somewhat useless. 
+// Until VC++ supports string literals, the buildystems should define 
+// _CHAR16T and let EABase define char16_t and EA_CHAR16.
+//
+// GCC defines char16_t and char32_t in the C compiler in -std=gnu99 mode, 
+// as __CHAR16_TYPE__ and __CHAR32_TYPE__, and for the C++ compiler 
+// in -std=c++0x and -std=gnu++0x modes, as char16_t and char32_t too.
+
+#if !defined(EA_CHAR16_NATIVE)
+    #if defined(_MSC_VER) && (_MSC_VER >= 1600) && defined(_HAS_CHAR16_T_LANGUAGE_SUPPORT) && _HAS_CHAR16_T_LANGUAGE_SUPPORT // VS2010+
+        #define EA_CHAR16_NATIVE 1
+    #elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 404) && (defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(__STDC_VERSION__)) // g++ (C++ compiler) 4.4+ with -std=c++0x or gcc (C compiler) 4.4+ with -std=gnu99
+        #define EA_CHAR16_NATIVE 1
+    #else
+        #define EA_CHAR16_NATIVE 0
+    #endif
+#endif
+
+#if !defined(EA_CHAR32_NATIVE)
+    #if defined(_MSC_VER) && (_MSC_VER >= 1600) && defined(_HAS_CHAR16_T_LANGUAGE_SUPPORT) && _HAS_CHAR16_T_LANGUAGE_SUPPORT // VS2010+
+        #define EA_CHAR32_NATIVE 1
+    #elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 404) && (defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(__STDC_VERSION__)) // g++ (C++ compiler) 4.4+ with -std=c++0x or gcc (C compiler) 4.4+ with -std=gnu99
+        #define EA_CHAR32_NATIVE 1
+    #else
+        #define EA_CHAR32_NATIVE 0
+    #endif
+#endif
+
+
 #ifndef CHAR8_T_DEFINED // If the user hasn't already defined these...
     #define CHAR8_T_DEFINED
 
-    #if (EA_WCHAR_SIZE == 2)
+    #if EA_CHAR16_NATIVE
+        typedef char char8_t;
+
+        // In C++, char16_t and char32_t are already defined by the compiler.
+        // In MS C, char16_t and char32_t are already defined by the compiler/standard library.
+        // In GCC C, __CHAR16_TYPE__ and __CHAR32_TYPE__ are defined instead, and we must define char16_t and char32_t from these.
+        #if defined(__GNUC__) && !defined(__GXX_EXPERIMENTAL_CXX0X__) && defined(__CHAR16_TYPE__) // If using GCC and compiling in C...
+            typedef __CHAR16_TYPE__ char16_t;
+            typedef __CHAR32_TYPE__ char32_t;
+        #endif
+    #elif (EA_WCHAR_SIZE == 2)
         typedef char      char8_t;
         typedef wchar_t   char16_t;
         typedef uint32_t  char32_t;
@@ -613,6 +758,37 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         typedef char      char8_t;
         typedef uint16_t  char16_t;
         typedef wchar_t   char32_t;
+    #endif
+#endif
+
+
+// EA_CHAR16 / EA_CHAR32
+//
+// Supports usage of portable string constants.
+//
+// Example usage:
+//     const char16_t* str = EA_CHAR16("Hello world");
+//     const char32_t* str = EA_CHAR32("Hello world");
+//     const char16_t  c   = EA_CHAR16('\x3001');
+//     const char32_t  c   = EA_CHAR32('\x3001');
+//
+#ifndef EA_CHAR16
+    #if EA_CHAR16_NATIVE && !defined(_MSC_VER) // Microsoft doesn't support char16_t string literals.
+        #define EA_CHAR16(s) u ## s
+    #elif (EA_WCHAR_SIZE == 2)
+        #define EA_CHAR16(s) L ## s
+    #else
+      //#define EA_CHAR16(s) // Impossible to implement.
+    #endif
+#endif
+
+#ifndef EA_CHAR32
+    #if EA_CHAR32_NATIVE && !defined(_MSC_VER) // Microsoft doesn't support char32_t string literals.
+        #define EA_CHAR32(s) U ## s
+    #elif (EA_WCHAR_SIZE == 2)
+      //#define EA_CHAR32(s) // Impossible to implement.
+    #else
+        #define EA_CHAR32(s) L ## s
     #endif
 #endif
 
@@ -632,6 +808,55 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #define EAArrayCount(x) (sizeof(x) / sizeof(x[0]))
 #endif
 
+
+// ------------------------------------------------------------------------
+// static_assert
+//
+// C++0x static_assert (a.k.a. compile-time assert).
+//
+// Specification:
+//     void static_assert(bool const_expression, const char* description);
+//
+// Example usage:
+//     static_assert(sizeof(int) == 4, "int must be 32 bits");
+//
+#if !defined(EABASE_STATIC_ASSERT_ENABLED)
+    #if defined(EA_DEBUG) || defined(_DEBUG)
+        #define EABASE_STATIC_ASSERT_ENABLED 1
+    #else
+        #define EABASE_STATIC_ASSERT_ENABLED 0
+    #endif
+#endif
+
+#ifndef EA_PREPROCESSOR_JOIN
+    #define EA_PREPROCESSOR_JOIN(a, b)  EA_PREPROCESSOR_JOIN1(a, b)
+    #define EA_PREPROCESSOR_JOIN1(a, b) EA_PREPROCESSOR_JOIN2(a, b)
+    #define EA_PREPROCESSOR_JOIN2(a, b) a##b
+#endif
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1600)
+    // static_assert is defined by the compiler for both C and C++.
+#elif defined(__GNUC__) && defined(__GXX_EXPERIMENTAL_CXX0X__)
+    // static_assert is defined by the compiler.
+#else
+    #if EABASE_STATIC_ASSERT_ENABLED
+        #if defined(__COUNTER__) // If this VC++ extension is available...
+            #define static_assert(expression, description) enum { EA_PREPROCESSOR_JOIN(static_assert_, __COUNTER__) = 1 / ((!!(expression)) ? 1 : 0) }
+        #else
+            #define static_assert(expression, description) enum { EA_PREPROCESSOR_JOIN(static_assert_, __LINE__) = 1 / ((!!(expression)) ? 1 : 0) }
+        #endif
+    #else
+        #if defined(EA_COMPILER_METROWERKS)
+            #if defined(__cplusplus)
+                #define static_assert(expression, description) struct EA_PREPROCESSOR_JOIN(EACTAssertUnused_, __LINE__){ }
+            #else
+                #define static_assert(expression, description) enum { EA_PREPROCESSOR_JOIN(static_assert_, __LINE__) = 1 / ((!!(expression)) ? 1 : 0) }
+            #endif
+        #else
+            #define static_assert(expression, description)
+        #endif
+    #endif
+#endif
 
 
 #endif // Header include guard
