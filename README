@@ -1,5 +1,6 @@
-At http://gpl.ea.com you can download some open-source packages in zip files.
+                        -- About this library --
 
+At http://gpl.ea.com you can download some open-source packages in zip files.
 Deep inside some of these zip files is C++ code for the EASTL library, a
 replacement for the STL. I'm not sure if these packages include the complete
 library, but it seems to have all of the fundamentals.
@@ -12,3 +13,15 @@ If you're just browsing, then most of the good stuff is under include/EASTL/
 
 To learn more about EASTL, go here:
 http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html
+
+                              -- Usage --
+
+Add the 'include' directory to your include path, and the contents of 'src'
+to your project's source files. (Alternatively, you could try to compile the
+files inside 'src' into a shared library).
+
+You'll need to implement a few functions used by EASTL, such as two overloads
+of operator new[], Vsnsprintf8, and possibly others. See example/example.cpp for
+some sample code. There is also a wealth of compiler flags to choose from, see
+include/EASTL/internal/config.h and include/EABase/config/* . For more detailed
+documentation, you'll have to read the source code. :)
