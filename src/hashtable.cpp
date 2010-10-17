@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -55,7 +55,7 @@ namespace eastl
     /// a new empty hashtable allocates no memory. It has two entries, one for 
     /// the first lone empty (NULL) bucket, and one for the non-NULL trailing sentinel.
     /// 
-    EASTL_API void_may_alias gpEmptyBucketArray[2] = { NULL, (void*)uintptr_t(~0) };
+    EASTL_API void* gpEmptyBucketArray[2] = { NULL, (void*)uintptr_t(~0) };
 
 
 

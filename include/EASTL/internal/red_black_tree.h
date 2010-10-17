@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -401,6 +401,9 @@ namespace eastl
         // properties
         allocator_type& get_allocator();
         void            set_allocator(const allocator_type& allocator);
+
+        const key_compare& key_comp() const { return mCompare; }
+        key_compare&       key_comp()       { return mCompare; }
 
         this_type& operator=(const this_type& x);
 
@@ -815,7 +818,10 @@ namespace eastl
         {
             clear();
 
-            // We leave mAllocator and as-is.
+            #if EASTL_ALLOCATOR_COPY_ENABLED
+                mAllocator = x.mAllocator;
+            #endif
+
             base_type::mCompare = x.mCompare;
 
             if(x.mAnchor.mpNodeParent) // mAnchor.mpNodeParent is the rb_tree root node.
@@ -836,7 +842,7 @@ namespace eastl
         if(mAllocator == x.mAllocator) // If allocators are equivalent...
         {
             // Most of our members can be exchaged by a basic swap:
-            // We leave mAllocator and as-is.
+            // We leave mAllocator as-is.
             eastl::swap(mnSize,              x.mnSize);
             eastl::swap(base_type::mCompare, x.mCompare);
 
@@ -1701,7 +1707,7 @@ namespace eastl
             try
             {
         #endif
-                new(&pNode->mValue) value_type(key);
+                ::new(&pNode->mValue) value_type(key);
 
         #if EASTL_EXCEPTIONS_ENABLED
             }
@@ -1736,7 +1742,7 @@ namespace eastl
             try
             {
         #endif
-                new(&pNode->mValue) value_type(value);
+                ::new(&pNode->mValue) value_type(value);
         #if EASTL_EXCEPTIONS_ENABLED
             }
             catch(...)

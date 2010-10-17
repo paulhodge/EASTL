@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -260,6 +260,50 @@ namespace eastl
             { return a < b; }
     };
 
+
+
+
+    /// unary_negate
+    ///
+    template <typename Predicate>
+    class unary_negate : public unary_function<typename Predicate::argument_type, bool>
+    {
+        protected:
+            Predicate mPredicate;
+        public:
+            explicit unary_negate(const Predicate& a)
+                : mPredicate(a) {}
+            bool operator()(const typename Predicate::argument_type& a) const
+                { return !mPredicate(a); }
+    };
+
+    template <typename Predicate>
+    inline unary_negate<Predicate> not1(const Predicate& predicate)
+        { return unary_negate<Predicate>(predicate); }
+
+
+
+    /// binary_negate
+    ///
+    template <typename Predicate>
+    class binary_negate : public binary_function<typename Predicate::first_argument_type, typename Predicate::second_argument_type, bool>
+    {
+        protected:
+            Predicate mPredicate;
+        public:
+            explicit binary_negate(const Predicate& a)
+                : mPredicate(a) { }
+            bool operator()(const typename Predicate::first_argument_type& a, const typename Predicate::second_argument_type& b) const
+                { return !mPredicate(a, b); }
+    };
+
+    template <typename Predicate>
+    inline binary_negate<Predicate> not2(const Predicate& predicate)
+        { return binary_negate<Predicate>(predicate); }
+
+
+
+
     ///////////////////////////////////////////////////////////////////////
     // bind
     ///////////////////////////////////////////////////////////////////////
@@ -321,13 +365,408 @@ namespace eastl
         return binder2nd<Operation>(op, value(x));
     }
 
+
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // pointer_to_unary_function
+    ///////////////////////////////////////////////////////////////////////
+
+    /// pointer_to_unary_function
+    ///
+    /// This is an adapter template which converts a pointer to a standalone
+    /// function to a function object. This allows standalone functions to 
+    /// work in many cases where the system requires a function object.
+    ///
+    /// Example usage:
+    ///     ptrdiff_t Rand(ptrdiff_t n) { return rand() % n; } // Note: The C rand function is poor and slow.
+    ///     pointer_to_unary_function<ptrdiff_t, ptrdiff_t> randInstance(Rand);
+    ///     random_shuffle(pArrayBegin, pArrayEnd, randInstance);
+    ///
+    template <typename Arg, typename Result>
+    class pointer_to_unary_function : public unary_function<Arg, Result>
+    {
+    protected:
+        Result (*mpFunction)(Arg);
+
+    public:
+        pointer_to_unary_function()
+            { }
+
+        explicit pointer_to_unary_function(Result (*pFunction)(Arg))
+            : mpFunction(pFunction) { }
+
+        Result operator()(Arg x) const
+            { return mpFunction(x); } 
+    };
+
+
+    /// ptr_fun
+    ///
+    /// This ptr_fun is simply shorthand for usage of pointer_to_unary_function.
+    ///
+    /// Example usage (actually, you don't need to use ptr_fun here, but it works anyway):
+    ///    int factorial(int x) { return (x > 1) ? (x * factorial(x - 1)) : x; }
+    ///    transform(pIntArrayBegin, pIntArrayEnd, pIntArrayBegin, ptr_fun(factorial));
+    ///
+    template <typename Arg, typename Result>
+    inline pointer_to_unary_function<Arg, Result> ptr_fun(Result (*pFunction)(Arg))
+        { return pointer_to_unary_function<Arg, Result>(pFunction); }
+
+
+
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // pointer_to_binary_function
+    ///////////////////////////////////////////////////////////////////////
+
+    /// pointer_to_binary_function
+    ///
+    /// This is an adapter template which converts a pointer to a standalone
+    /// function to a function object. This allows standalone functions to 
+    /// work in many cases where the system requires a function object.
+    ///
+    template <typename Arg1, typename Arg2, typename Result>
+    class pointer_to_binary_function : public binary_function<Arg1, Arg2, Result>
+    {
+    protected:
+        Result (*mpFunction)(Arg1, Arg2);
+
+    public:
+        pointer_to_binary_function()
+            { }
+
+        explicit pointer_to_binary_function(Result (*pFunction)(Arg1, Arg2))
+            : mpFunction(pFunction) {}
+
+        Result operator()(Arg1 x, Arg2 y) const
+            { return mpFunction(x, y); }
+    };
+
+
+    /// This ptr_fun is simply shorthand for usage of pointer_to_binary_function.
+    ///
+    /// Example usage (actually, you don't need to use ptr_fun here, but it works anyway):
+    ///    int multiply(int x, int y) { return x * y; }
+    ///    transform(pIntArray1Begin, pIntArray1End, pIntArray2Begin, pIntArray1Begin, ptr_fun(multiply));
+    ///
+    template <typename Arg1, typename Arg2, typename Result>
+    inline pointer_to_binary_function<Arg1, Arg2, Result> ptr_fun(Result (*pFunction)(Arg1, Arg2))
+        { return pointer_to_binary_function<Arg1, Arg2, Result>(pFunction); }
+
+
+
+
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // mem_fun
+    // mem_fun1
+    //
+    // Note that mem_fun calls member functions via *pointers* to classes 
+    // and not instances of classes. mem_fun_ref is for calling functions
+    // via instances of classes or references to classes.
+    //
+    ///////////////////////////////////////////////////////////////////////
+
+    /// mem_fun_t
+    ///
+    /// Member function with no arguments.
+    ///
+    template <typename Result, typename T> 
+    class mem_fun_t : public unary_function<T*, Result>
+    {
+    public:
+        typedef Result (T::*MemberFunction)();
+
+        EA_FORCE_INLINE explicit mem_fun_t(MemberFunction pMemberFunction)
+            : mpMemberFunction(pMemberFunction)
+        {
+            // Empty
+        }
+
+        EA_FORCE_INLINE Result operator()(T* pT) const
+        {
+            return (pT->*mpMemberFunction)();
+        }
+
+    protected:
+        MemberFunction mpMemberFunction;
+    };
+
+
+    /// mem_fun1_t
+    ///
+    /// Member function with one argument.
+    ///
+    template <typename Result, typename T, typename Argument>
+    class mem_fun1_t : public binary_function<T*, Argument, Result>
+    {
+    public:
+        typedef Result (T::*MemberFunction)(Argument);
+
+        EA_FORCE_INLINE explicit mem_fun1_t(MemberFunction pMemberFunction)
+            : mpMemberFunction(pMemberFunction)
+        {
+            // Empty
+        }
+
+        EA_FORCE_INLINE Result operator()(T* pT, Argument arg) const
+        {
+            return (pT->*mpMemberFunction)(arg);
+        }
+
+    protected:
+        MemberFunction mpMemberFunction;
+    };
+
+
+    /// const_mem_fun_t
+    ///
+    /// Const member function with no arguments.
+    /// Note that we inherit from unary_function<const T*, Result>
+    /// instead of what the C++ standard specifies: unary_function<T*, Result>.
+    /// The C++ standard is in error and this has been recognized by the defect group.
+    ///
+    template <typename Result, typename T>
+    class const_mem_fun_t : public unary_function<const T*, Result>
+    {
+    public:
+        typedef Result (T::*MemberFunction)() const;
+
+        EA_FORCE_INLINE explicit const_mem_fun_t(MemberFunction pMemberFunction)
+            : mpMemberFunction(pMemberFunction)
+        {
+            // Empty
+        }
+
+        EA_FORCE_INLINE Result operator()(const T* pT) const
+        {
+            return (pT->*mpMemberFunction)();
+        }
+
+    protected:
+        MemberFunction mpMemberFunction;
+    };
+
+
+    /// const_mem_fun1_t
+    ///
+    /// Const member function with one argument.
+    /// Note that we inherit from unary_function<const T*, Result>
+    /// instead of what the C++ standard specifies: unary_function<T*, Result>.
+    /// The C++ standard is in error and this has been recognized by the defect group.
+    ///
+    template <typename Result, typename T, typename Argument>
+    class const_mem_fun1_t : public binary_function<const T*, Argument, Result>
+    {
+    public:
+        typedef Result (T::*MemberFunction)(Argument) const;
+
+        EA_FORCE_INLINE explicit const_mem_fun1_t(MemberFunction pMemberFunction)
+            : mpMemberFunction(pMemberFunction)
+        {
+            // Empty
+        }
+
+        EA_FORCE_INLINE Result operator()(const T* pT, Argument arg) const
+        {
+            return (pT->*mpMemberFunction)(arg);
+        }
+
+    protected:
+        MemberFunction mpMemberFunction;
+    };
+
+
+    /// mem_fun
+    ///
+    /// This is the high level interface to the mem_fun_t family.
+    ///
+    /// Example usage:
+    ///    struct TestClass { void print() { puts("hello"); } }
+    ///    TestClass* pTestClassArray[3] = { ... };
+    ///    for_each(pTestClassArray, pTestClassArray + 3, &TestClass::print);
+    ///
+    template <typename Result, typename T>
+    EA_FORCE_INLINE mem_fun_t<Result, T>
+    mem_fun(Result (T::*MemberFunction)())
+    {
+        return eastl::mem_fun_t<Result, T>(MemberFunction);
+    }
+
+    template <typename Result, typename T, typename Argument>
+    EA_FORCE_INLINE mem_fun1_t<Result, T, Argument>
+    mem_fun(Result (T::*MemberFunction)(Argument))
+    {
+        return eastl::mem_fun1_t<Result, T, Argument>(MemberFunction);
+    }
+
+    template <typename Result, typename T>
+    EA_FORCE_INLINE const_mem_fun_t<Result, T>
+    mem_fun(Result (T::*MemberFunction)() const)
+    {
+        return eastl::const_mem_fun_t<Result, T>(MemberFunction);
+    }
+
+    template <typename Result, typename T, typename Argument>
+    EA_FORCE_INLINE const_mem_fun1_t<Result, T, Argument>
+    mem_fun(Result (T::*MemberFunction)(Argument) const)
+    {
+        return eastl::const_mem_fun1_t<Result, T, Argument>(MemberFunction);
+    }
+
+
+
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // mem_fun_ref
+    // mem_fun1_ref
+    //
+    ///////////////////////////////////////////////////////////////////////
+
+    /// mem_fun_ref_t
+    ///
+    template <typename Result, typename T>
+    class mem_fun_ref_t : public unary_function<T, Result>
+    {
+    public:
+        typedef Result (T::*MemberFunction)();
+
+        EA_FORCE_INLINE explicit mem_fun_ref_t(MemberFunction pMemberFunction)
+            : mpMemberFunction(pMemberFunction)
+        {
+            // Empty
+        }
+
+        EA_FORCE_INLINE Result operator()(T& t) const
+        {
+            return (t.*mpMemberFunction)();
+        }
+
+    protected:
+        MemberFunction mpMemberFunction;
+    };
+
+
+    /// mem_fun1_ref_t
+    ///
+    template <typename Result, typename T, typename Argument>
+    class mem_fun1_ref_t : public binary_function<T, Argument, Result>
+    {
+    public:
+        typedef Result (T::*MemberFunction)(Argument);
+
+        EA_FORCE_INLINE explicit mem_fun1_ref_t(MemberFunction pMemberFunction)
+            : mpMemberFunction(pMemberFunction)
+        {
+            // Empty
+        }
+
+        EA_FORCE_INLINE Result operator()(T& t, Argument arg) const
+        {
+            return (t.*mpMemberFunction)(arg);
+        }
+
+    protected:
+        MemberFunction mpMemberFunction;
+    };
+
+
+    /// const_mem_fun_ref_t
+    ///
+    template <typename Result, typename T>
+    class const_mem_fun_ref_t : public unary_function<T, Result>
+    {
+    public:
+        typedef Result (T::*MemberFunction)() const;
+
+        EA_FORCE_INLINE explicit const_mem_fun_ref_t(MemberFunction pMemberFunction)
+            : mpMemberFunction(pMemberFunction)
+        {
+            // Empty
+        }
+
+        EA_FORCE_INLINE Result operator()(const T& t) const
+        {
+            return (t.*mpMemberFunction)();
+        }
+
+    protected:
+        MemberFunction mpMemberFunction;
+    };
+
+
+    /// const_mem_fun1_ref_t
+    ///
+    template <typename Result, typename T, typename Argument>
+    class const_mem_fun1_ref_t : public binary_function<T, Argument, Result>
+    {
+    public:
+        typedef Result (T::*MemberFunction)(Argument) const;
+
+        EA_FORCE_INLINE explicit const_mem_fun1_ref_t(MemberFunction pMemberFunction)
+            : mpMemberFunction(pMemberFunction)
+        {
+            // Empty
+        }
+
+        EA_FORCE_INLINE Result operator()(const T& t, Argument arg) const
+        {
+            return (t.*mpMemberFunction)(arg);
+        }
+
+    protected:
+        MemberFunction mpMemberFunction;
+    };
+
+
+    /// mem_fun_ref
+    /// Example usage:
+    ///    struct TestClass { void print() { puts("hello"); } }
+    ///    TestClass testClassArray[3];
+    ///    for_each(testClassArray, testClassArray + 3, &TestClass::print);
+    ///
+    template <typename Result, typename T>
+    EA_FORCE_INLINE mem_fun_ref_t<Result, T>
+    mem_fun_ref(Result (T::*MemberFunction)())
+    {
+        return eastl::mem_fun_ref_t<Result, T>(MemberFunction);
+    }
+
+    template <typename Result, typename T, typename Argument>
+    EA_FORCE_INLINE mem_fun1_ref_t<Result, T, Argument>
+    mem_fun_ref(Result (T::*MemberFunction)(Argument))
+    {
+        return eastl::mem_fun1_ref_t<Result, T, Argument>(MemberFunction);
+    }
+
+    template <typename Result, typename T>
+    EA_FORCE_INLINE const_mem_fun_ref_t<Result, T>
+    mem_fun_ref(Result (T::*MemberFunction)() const)
+    {
+        return eastl::const_mem_fun_ref_t<Result, T>(MemberFunction);
+    }
+
+    template <typename Result, typename T, typename Argument>
+    EA_FORCE_INLINE const_mem_fun1_ref_t<Result, T, Argument>
+    mem_fun_ref(Result (T::*MemberFunction)(Argument) const)
+    {
+        return eastl::const_mem_fun1_ref_t<Result, T, Argument>(MemberFunction);
+    }
+
+
+
+
     ///////////////////////////////////////////////////////////////////////
     // hash
     ///////////////////////////////////////////////////////////////////////
 
     template <typename T> struct hash;
 
-    template <typename T> struct hash<T*>
+    template <typename T> struct hash<T*> // Note that we use the pointer as-is and don't divide by sizeof(T*). This is because the table is of a prime size and this division doesn't benefit distribution.
         { size_t operator()(T* p) const { return size_t(uintptr_t(p)); } };
 
     template <> struct hash<bool>

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -130,8 +130,17 @@ namespace eastl
 
         void      set_capacity(size_type n);
         void      reset();
-        size_type max_size() const;     // Returns the max fixed size, which is the user-supplied nodeCount parameter.
-        bool      full() const;         // Returns true if the fixed space is fully allocated. Note that if overflow is enabled, the container size can be greater than nodeCount but full() could return true because the fixed space may have a recently freed slot.
+        size_type max_size() const;       // Returns the max fixed size, which is the user-supplied nodeCount parameter.
+        bool      has_overflowed() const; // Returns true if the fixed space is fully allocated. Note that if overflow is enabled, the container size can be greater than nodeCount but full() could return true because the fixed space may have a recently freed slot.
+
+        void*     push_back_uninitialized();
+
+        // Deprecated:
+        bool      full() const { return has_overflowed(); }
+
+    protected:
+        void*     DoPushBackUninitialized(true_type);
+        void*     DoPushBackUninitialized(false_type);
 
     }; // fixed_vector
 
@@ -262,13 +271,31 @@ namespace eastl
 
 
     template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
-    bool fixed_vector<T, nodeCount, bEnableOverflow, Allocator>::full() const
+    inline bool fixed_vector<T, nodeCount, bEnableOverflow, Allocator>::has_overflowed() const
     {
         // If size >= capacity, then we are definitely full. 
         // Also, if our size is smaller but we've switched away from mBuffer due to a previous overflow, then we are considered full.
         return ((size_t)(mpEnd - mpBegin) >= kMaxSize) || ((void*)mpBegin != (void*)mBuffer.buffer);
     }
 
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    inline void* fixed_vector<T, nodeCount, bEnableOverflow, Allocator>::push_back_uninitialized()
+    {
+        return DoPushBackUninitialized(typename type_select<bEnableOverflow, true_type, false_type>::type());
+    }
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    inline void* fixed_vector<T, nodeCount, bEnableOverflow, Allocator>::DoPushBackUninitialized(true_type)
+    {
+        return base_type::push_back_uninitialized();
+    }
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    inline void* fixed_vector<T, nodeCount, bEnableOverflow, Allocator>::DoPushBackUninitialized(false_type)
+    {
+        return mpEnd++;
+    }
 
 
     ///////////////////////////////////////////////////////////////////////

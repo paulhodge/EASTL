@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -68,6 +68,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <EASTL/functional.h>
 #include <EASTL/utility.h>
 #include <EASTL/algorithm.h>
+#include <string.h>
 
 #ifdef _MSC_VER
     #pragma warning(push, 0)
@@ -112,8 +113,7 @@ namespace eastl
     /// a new empty hashtable allocates no memory. It has two entries, one for 
     /// the first lone empty (NULL) bucket, and one for the non-NULL trailing sentinel.
     /// 
-    typedef void* EASTL_MAY_ALIAS void_may_alias;
-    extern EASTL_API void_may_alias gpEmptyBucketArray[2];
+    extern EASTL_API void* gpEmptyBucketArray[2];
 
 
 
@@ -499,7 +499,13 @@ namespace eastl
         H1 hash_function() const
             { return H1(); }
 
-        Equal equal_function() const
+        Equal equal_function() const // Deprecated. Use key_eq() instead, as key_eq is what the new C++ standard 
+            { return mEqual; }       // has specified in its hashtable (unordered_*) proposal.
+
+        const Equal& key_eq() const
+            { return mEqual; }
+
+        Equal& key_eq()
             { return mEqual; }
 
     protected:
@@ -577,7 +583,13 @@ namespace eastl
         H1 hash_function() const
             { return m_h1; }
 
-        Equal equal_function() const
+        Equal equal_function() const // Deprecated. Use key_eq() instead, as key_eq is what the new C++ standard 
+            { return mEqual; }       // has specified in its hashtable (unordered_*) proposal.
+
+        const Equal& key_eq() const
+            { return mEqual; }
+
+        Equal& key_eq()
             { return mEqual; }
 
     protected:
@@ -642,7 +654,13 @@ namespace eastl
         H1 hash_function() const
             { return m_h1; }
 
-        Equal equal_function() const
+        Equal equal_function() const // Deprecated. Use key_eq() instead, as key_eq is what the new C++ standard 
+            { return mEqual; }       // has specified in its hashtable (unordered_*) proposal.
+
+        const Equal& key_eq() const
+            { return mEqual; }
+
+        Equal& key_eq()
             { return mEqual; }
 
     protected:
@@ -799,6 +817,8 @@ namespace eastl
         typedef H2                                                                                  h2_type;
         typedef H                                                                                   h_type;
 
+        using hash_code_base_type::key_eq;
+        using hash_code_base_type::hash_function;
         using hash_code_base_type::mExtractKey;
         using hash_code_base_type::get_hash_code;
         using hash_code_base_type::bucket_index;
@@ -933,6 +953,7 @@ namespace eastl
         size_type        erase(const key_type& k);
 
         void clear();
+        void clear(bool clearBuckets);
         void reset();
         void rehash(size_type nBucketCount);
 
@@ -1191,6 +1212,11 @@ namespace eastl
         if(this != &x)
         {
             clear();
+
+            #if EASTL_ALLOCATOR_COPY_ENABLED
+                mAllocator = x.mAllocator;
+            #endif
+
             insert(x.begin(), x.end());
         }
         return *this;
@@ -1219,7 +1245,7 @@ namespace eastl
             try
             {
         #endif
-                new(&pNode->mValue) value_type(value);
+                ::new(&pNode->mValue) value_type(value);
                 pNode->mpNext = NULL;
                 return pNode;
         #if EASTL_EXCEPTIONS_ENABLED
@@ -1245,7 +1271,7 @@ namespace eastl
             try
             {
         #endif
-                new(&pNode->mValue) value_type(key);
+                ::new(&pNode->mValue) value_type(key);
                 pNode->mpNext = NULL;
                 return pNode;
         #if EASTL_EXCEPTIONS_ENABLED
@@ -1326,7 +1352,7 @@ namespace eastl
     {
         if(mAllocator == x.mAllocator) // If allocators are equivalent...
         {
-            // We leave mAllocator and as-is.
+            // We leave mAllocator as-is.
             hash_code_base<K, V, EK, Eq, H1, H2, H, bC>::base_swap(x); // hash_code_base has multiple implementations, so we let them handle the swap.
             eastl::swap(mRehashPolicy,  x.mRehashPolicy);
             eastl::swap(mpBucketArray,  x.mpBucketArray);
@@ -1653,7 +1679,7 @@ namespace eastl
                         DoRehash(bRehash.second);
                     }
 
-                    EASTL_ASSERT(mpBucketArray != (node_type**)&gpEmptyBucketArray[0]);
+                    EASTL_ASSERT((void**)mpBucketArray != &gpEmptyBucketArray[0]);
                     pNodeNew->mpNext = mpBucketArray[n];
                     mpBucketArray[n] = pNodeNew;
                     ++mnElementCount;
@@ -1701,7 +1727,7 @@ namespace eastl
 
         if(pNodePrev == NULL)
         {
-            EASTL_ASSERT(mpBucketArray != (node_type**)&gpEmptyBucketArray[0]);
+            EASTL_ASSERT((void**)mpBucketArray != &gpEmptyBucketArray[0]);
             pNodeNew->mpNext = mpBucketArray[n];
             mpBucketArray[n] = pNodeNew;
         }
@@ -1746,7 +1772,7 @@ namespace eastl
                         DoRehash(bRehash.second);
                     }
 
-                    EASTL_ASSERT(mpBucketArray != (node_type**)&gpEmptyBucketArray[0]);
+                    EASTL_ASSERT((void**)mpBucketArray != &gpEmptyBucketArray[0]);
                     pNodeNew->mpNext = mpBucketArray[n];
                     mpBucketArray[n] = pNodeNew;
                     ++mnElementCount;
@@ -1793,7 +1819,7 @@ namespace eastl
 
         if(pNodePrev == NULL)
         {
-            EASTL_ASSERT(mpBucketArray != (node_type**)&gpEmptyBucketArray[0]);
+            EASTL_ASSERT((void**)mpBucketArray != &gpEmptyBucketArray[0]);
             pNodeNew->mpNext = mpBucketArray[n];
             mpBucketArray[n] = pNodeNew;
         }
@@ -1985,6 +2011,21 @@ namespace eastl
 
     template <typename K, typename V, typename A, typename EK, typename Eq,
               typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+    inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::clear(bool clearBuckets)
+    {
+        DoFreeNodes(mpBucketArray, mnBucketCount);
+        if(clearBuckets)
+        {
+            DoFreeBuckets(mpBucketArray, mnBucketCount);
+            reset();
+        }
+        mnElementCount = 0;
+    }
+
+
+
+    template <typename K, typename V, typename A, typename EK, typename Eq,
+              typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
     inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::reset()
     {
         // The reset function is a special extension function which unilaterally 
@@ -1992,7 +2033,14 @@ namespace eastl
         // the contained objects. This is useful for very quickly tearing down a 
         // container built into scratch memory.
         mnBucketCount  = 1;
-        mpBucketArray  = (node_type**)&gpEmptyBucketArray[0];
+
+        #ifdef _MSC_VER
+            mpBucketArray = (node_type**)&gpEmptyBucketArray[0];
+        #else
+            void* p = &gpEmptyBucketArray[0];
+            memcpy(&mpBucketArray, &p, sizeof(mpBucketArray)); // Other compilers implement strict aliasing and casting is thus unsafe.
+        #endif
+
         mnElementCount = 0;
         mRehashPolicy.mnNextResize = 0;
     }
@@ -2072,7 +2120,7 @@ namespace eastl
 
         // Verify that gpEmptyBucketArray is used correctly.
         // gpEmptyBucketArray is only used when initially empty.
-        if(mpBucketArray == (node_type**)&gpEmptyBucketArray[0])
+        if((void**)mpBucketArray == &gpEmptyBucketArray[0])
         {
             if(mnElementCount) // gpEmptyBucketArray is used only for empty hash tables.
                 return false;

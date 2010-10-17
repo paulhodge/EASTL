@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -46,21 +46,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <EASTL/allocator.h>
 
 
-#ifdef _MSC_VER
-    #pragma warning(push)
-    #pragma warning(disable: 4396)  // inline specifier cannot be used when friend declaration refers to a template specialization.
-#endif
-
-
 namespace EA
 {
     namespace Allocator
     {
-        template<typename AllocatorType> class CoreAllocatorAdapter;
-        template<typename AllocatorType> bool operator==(const CoreAllocatorAdapter<AllocatorType>& a, const CoreAllocatorAdapter<AllocatorType>& b);
-        template<typename AllocatorType> bool operator!=(const CoreAllocatorAdapter<AllocatorType>& a, const CoreAllocatorAdapter<AllocatorType>& b);
-
-
         /// CoreAllocatorAdapter
         ///
         /// Implements the EASTL allocator interface.
@@ -86,6 +75,7 @@ namespace EA
         public:
             CoreAllocatorAdapter(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME));
             CoreAllocatorAdapter(const char* pName, AllocatorType* pAllocator);
+            CoreAllocatorAdapter(const char* pName, AllocatorType* pAllocator, int flags);
             CoreAllocatorAdapter(const CoreAllocatorAdapter& x);
             CoreAllocatorAdapter(const CoreAllocatorAdapter& x, const char* pName);
 
@@ -104,10 +94,7 @@ namespace EA
             const char* get_name() const;
             void        set_name(const char* pName);
 
-        protected:
-            friend bool operator==<>(const this_type& a, const this_type& b);
-            friend bool operator!=<>(const this_type& a, const this_type& b);
-
+        public: // Public because otherwise VC++ generates (possibly invalid) warnings about inline friend template specializations.
             AllocatorType* mpCoreAllocator;
             int            mnFlags;    // Allocation flags. See ICoreAllocator/AllocFlags.
 
@@ -165,6 +152,15 @@ namespace EA
         template<class AllocatorType>
         inline CoreAllocatorAdapter<AllocatorType>::CoreAllocatorAdapter(const char* EASTL_NAME(pName), AllocatorType* pCoreAllocator)
             : mpCoreAllocator(pCoreAllocator), mnFlags(0)
+        {
+            #if EASTL_NAME_ENABLED
+                mpName = pName ? pName : EASTL_ALLOCATOR_DEFAULT_NAME;
+            #endif
+        }
+
+        template<class AllocatorType>
+        inline CoreAllocatorAdapter<AllocatorType>::CoreAllocatorAdapter(const char* EASTL_NAME(pName), AllocatorType* pCoreAllocator, int flags)
+            : mpCoreAllocator(pCoreAllocator), mnFlags(flags)
         {
             #if EASTL_NAME_ENABLED
                 mpName = pName ? pName : EASTL_ALLOCATOR_DEFAULT_NAME;
@@ -287,11 +283,6 @@ namespace EA
     } // namespace Allocator
 
 } // namespace EA
-
-
-#ifdef _MSC_VER
-    #pragma warning(pop)
-#endif
 
 
 #endif // Header include guard

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -134,6 +134,11 @@ namespace eastl
     {
         typedef BitsetWordType word_type;
         typedef BitsetBase<NW> this_type;
+      #if EASTL_BITSET_SIZE_T
+        typedef size_t         size_type;
+      #else
+        typedef eastl_size_t   size_type;
+      #endif
 
     public:
         word_type mWord[NW];
@@ -146,29 +151,29 @@ namespace eastl
         void operator|=(const this_type& x);
         void operator^=(const this_type& x);
 
-        void operator<<=(size_t n);
-        void operator>>=(size_t n);
+        void operator<<=(size_type n);
+        void operator>>=(size_type n);
 
         void flip();
         void set();
-        void set(size_t i, bool value);
+        void set(size_type i, bool value);
         void reset();
 
         bool operator==(const this_type& x) const;
 
-        bool   any() const;
-        size_t count() const;
+        bool      any() const;
+        size_type count() const;
 
         unsigned long to_ulong() const;
 
-        word_type& DoGetWord(size_t i);
-        word_type  DoGetWord(size_t i) const;
+        word_type& DoGetWord(size_type i);
+        word_type  DoGetWord(size_type i) const;
 
-        size_t DoFindFirst() const;
-        size_t DoFindNext(size_t last_find) const;
+        size_type DoFindFirst() const;
+        size_type DoFindNext(size_type last_find) const;
 
-        size_t DoFindLast() const;
-        size_t DoFindPrev(size_t last_find) const;
+        size_type DoFindLast() const;
+        size_type DoFindPrev(size_type last_find) const;
 
     }; // class BitsetBase
 
@@ -183,6 +188,11 @@ namespace eastl
     {
         typedef BitsetWordType word_type;
         typedef BitsetBase<1>  this_type;
+      #if EASTL_BITSET_SIZE_T
+        typedef size_t         size_type;
+      #else
+        typedef eastl_size_t   size_type;
+      #endif
 
     public:
         word_type mWord[1]; // Defined as an array of 1 so that bitset can treat this BitsetBase like others.
@@ -195,29 +205,29 @@ namespace eastl
         void operator|=(const this_type& x);
         void operator^=(const this_type& x);
 
-        void operator<<=(size_t n);
-        void operator>>=(size_t n);
+        void operator<<=(size_type n);
+        void operator>>=(size_type n);
 
         void flip();
         void set();
-        void set(size_t i, bool value);
+        void set(size_type i, bool value);
         void reset();
 
         bool operator==(const this_type& x) const;
 
-        bool   any() const;
-        size_t count() const;
+        bool      any() const;
+        size_type count() const;
 
         unsigned long to_ulong() const;
 
-        word_type& DoGetWord(size_t);
-        word_type  DoGetWord(size_t) const;
+        word_type& DoGetWord(size_type);
+        word_type  DoGetWord(size_type) const;
 
-        size_t DoFindFirst() const;
-        size_t DoFindNext(size_t last_find) const;
+        size_type DoFindFirst() const;
+        size_type DoFindNext(size_type last_find) const;
 
-        size_t DoFindLast() const;
-        size_t DoFindPrev(size_t last_find) const;
+        size_type DoFindLast() const;
+        size_type DoFindPrev(size_type last_find) const;
 
     }; // BitsetBase<1>
 
@@ -233,6 +243,11 @@ namespace eastl
     {
         typedef BitsetWordType word_type;
         typedef BitsetBase<2>  this_type;
+      #if EASTL_BITSET_SIZE_T
+        typedef size_t         size_type;
+      #else
+        typedef eastl_size_t   size_type;
+      #endif
 
     public:
         word_type mWord[2];
@@ -245,29 +260,29 @@ namespace eastl
         void operator|=(const this_type& x);
         void operator^=(const this_type& x);
 
-        void operator<<=(size_t n);
-        void operator>>=(size_t n);
+        void operator<<=(size_type n);
+        void operator>>=(size_type n);
 
         void flip();
         void set();
-        void set(size_t i, bool value);
+        void set(size_type i, bool value);
         void reset();
 
         bool operator==(const this_type& x) const;
 
-        bool   any() const;
-        size_t count() const;
+        bool      any() const;
+        size_type count() const;
 
         unsigned long to_ulong() const;
 
-        word_type& DoGetWord(size_t);
-        word_type  DoGetWord(size_t) const;
+        word_type& DoGetWord(size_type);
+        word_type  DoGetWord(size_type) const;
 
-        size_t DoFindFirst() const;
-        size_t DoFindNext(size_t last_find) const;
+        size_type DoFindFirst() const;
+        size_type DoFindNext(size_type last_find) const;
 
-        size_t DoFindLast() const;
-        size_t DoFindPrev(size_t last_find) const;
+        size_type DoFindLast() const;
+        size_type DoFindPrev(size_type last_find) const;
 
     }; // BitsetBase<2>
 
@@ -299,6 +314,7 @@ namespace eastl
         typedef BitsetBase<BITSET_WORD_COUNT(N)>    base_type;
         typedef bitset<N>                           this_type;
         typedef BitsetWordType                      word_type;
+        typedef typename base_type::size_type       size_type;
 
         enum
         {
@@ -328,12 +344,12 @@ namespace eastl
             friend class bitset;
 
             word_type* mpBitWord;
-            size_t     mnBitIndex; // Perhaps this should be eastl_size_t instead of size_t.
+            size_type  mnBitIndex;
         
             reference(){} // The C++ standard specifies that this is private.
     
         public:
-            reference(const bitset& x, size_t i);
+            reference(const bitset& x, size_type i);
 
             reference& operator=(bool value);
             reference& operator=(const reference& x);
@@ -358,51 +374,51 @@ namespace eastl
         this_type& operator|=(const this_type& x);
         this_type& operator^=(const this_type& x);
 
-        this_type& operator<<=(size_t n);
-        this_type& operator>>=(size_t n);
+        this_type& operator<<=(size_type n);
+        this_type& operator>>=(size_type n);
 
         this_type& set();
-        this_type& set(size_t i, bool value = true);
+        this_type& set(size_type i, bool value = true);
 
         this_type& reset();
-        this_type& reset(size_t i);
+        this_type& reset(size_type i);
             
         this_type& flip();
-        this_type& flip(size_t i);
+        this_type& flip(size_type i);
         this_type  operator~() const;
 
-        reference operator[](size_t i);
-        bool      operator[](size_t i) const;
+        reference operator[](size_type i);
+        bool      operator[](size_type i) const;
 
         const word_type* data() const;
-        word_type* data();
+        word_type*       data();
 
         unsigned long to_ulong() const;
 
-        size_t count() const;
-        size_t size() const;
+        size_type count() const;
+        size_type size() const;
 
         bool operator==(const this_type& x) const;
         bool operator!=(const this_type& x) const;
 
-        bool test(size_t i) const;
+        bool test(size_type i) const;
         bool any() const;
         bool none() const;
 
-        this_type operator<<(size_t n) const;
-        this_type operator>>(size_t n) const;
+        this_type operator<<(size_type n) const;
+        this_type operator>>(size_type n) const;
 
         // Finds the index of the first "on" bit, returns kSize if none are set.
-        size_t find_first() const;
+        size_type find_first() const;
 
         // Finds the index of the next "on" bit after last_find, returns kSize if none are set.
-        size_t find_next(size_t last_find) const;
+        size_type find_next(size_type last_find) const;
 
         // Finds the index of the last "on" bit, returns kSize if none are set.
-        size_t find_last() const;
+        size_type find_last() const;
 
         // Finds the index of the last "on" bit before last_find, returns kSize if none are set.
-        size_t find_prev(size_t last_find) const;
+        size_type find_prev(size_type last_find) const;
 
     }; // bitset
 
@@ -417,15 +433,15 @@ namespace eastl
     /// This is a fast trick way to count bits without branches nor memory accesses.
     ///
     #if(EA_PLATFORM_WORD_SIZE == 4)
-        inline size_t BitsetCountBits(uint32_t x)
+        inline uint32_t BitsetCountBits(uint32_t x)
         {
             x = x - ((x >> 1) & 0x55555555);
             x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
             x = (x + (x >> 4)) & 0x0F0F0F0F;
-            return (size_t)((x * 0x01010101) >> 24);
+            return (uint32_t)((x * 0x01010101) >> 24);
         }
     #else
-        inline size_t BitsetCountBits(uint64_t x)
+        inline uint32_t BitsetCountBits(uint64_t x)
         {
             // GCC 3.x's implementation of UINT64_C is broken and fails to deal with 
             // the code below correctly. So we make a workaround for it. Earlier and 
@@ -434,12 +450,12 @@ namespace eastl
                 x = x - ((x >> 1) & 0x5555555555555555ULL);
                 x = (x & 0x3333333333333333ULL) + ((x >> 2) & 0x3333333333333333ULL);
                 x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
-                return (size_t)((x * 0x0101010101010101ULL) >> 56);
+                return (uint32_t)((x * 0x0101010101010101ULL) >> 56);
             #else
                 x = x - ((x >> 1) & UINT64_C(0x5555555555555555));
                 x = (x & UINT64_C(0x3333333333333333)) + ((x >> 2) & UINT64_C(0x3333333333333333));
                 x = (x + (x >> 4)) & UINT64_C(0x0F0F0F0F0F0F0F0F);
-                return (size_t)((x * UINT64_C(0x0101010101010101)) >> 56);
+                return (uint32_t)((x * UINT64_C(0x0101010101010101)) >> 56);
             #endif
         }
     #endif
@@ -505,14 +521,14 @@ namespace eastl
 
 
     template <size_t NW>
-    inline void BitsetBase<NW>::operator<<=(size_t n)
+    inline void BitsetBase<NW>::operator<<=(size_type n)
     {
-        const size_t nWordShift = n >> kBitsPerWordShift;
+        const size_type nWordShift = (size_type)(n >> kBitsPerWordShift);
 
         if(nWordShift)
         {
             for(int i = (int)(NW - 1); i >= 0; --i)
-                mWord[i] = (nWordShift <= (size_t)i) ? mWord[i - nWordShift] : (word_type)0;
+                mWord[i] = (nWordShift <= (size_type)i) ? mWord[i - nWordShift] : (word_type)0;
         }
 
         if(n &= kBitsPerWordMask)
@@ -527,14 +543,14 @@ namespace eastl
 
 
     template <size_t NW>
-    inline void BitsetBase<NW>::operator>>=(size_t n)
+    inline void BitsetBase<NW>::operator>>=(size_type n)
     {
-        const size_t nWordShift = n >> kBitsPerWordShift;
+        const size_type nWordShift = (size_type)(n >> kBitsPerWordShift);
 
         if(nWordShift)
         {
             for(size_t i = 0; i < NW; ++i)
-                mWord[i] = ((nWordShift <= (NW - i)) ? mWord[i + nWordShift] : (word_type)0);
+                mWord[i] = ((nWordShift < (NW - i)) ? mWord[i + nWordShift] : (word_type)0);
         }
 
         if(n &= kBitsPerWordMask)
@@ -565,7 +581,7 @@ namespace eastl
 
 
     template <size_t NW>
-    inline void BitsetBase<NW>::set(size_t i, bool value)
+    inline void BitsetBase<NW>::set(size_type i, bool value)
     {
         if(value)
             mWord[i >> kBitsPerWordShift] |=  (static_cast<word_type>(1) << (i & kBitsPerWordMask));
@@ -615,19 +631,20 @@ namespace eastl
 
 
     template <size_t NW>
-    inline size_t BitsetBase<NW>::count() const
+    inline typename BitsetBase<NW>::size_type
+    BitsetBase<NW>::count() const
     {
-        size_t n = 0;
+        size_type n = 0;
 
         for(size_t i = 0; i < NW; i++)
         {
-            #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) // GCC 3.4 or later
+            #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) && !defined(EA_PLATFORM_ANDROID) // GCC 3.4 or later
                 #if(EA_PLATFORM_WORD_SIZE == 4)
-                    n +=  __builtin_popcountl(mWord[i]);
+                    n += (size_type)__builtin_popcountl(mWord[i]);
                 #else
-                    n +=  __builtin_popcountll(mWord[i]);
+                    n += (size_type)__builtin_popcountll(mWord[i]);
                 #endif
-            #elif defined(__GNUC__) && (__GNUC < 3)
+            #elif defined(__GNUC__) && (__GNUC__ < 3)
                 n +=  BitsetCountBits(mWord[i]); // GCC 2.x compiler inexplicably blows up on the code below.
             #else
                 for(word_type w = mWord[i]; w; w >>= 4)
@@ -658,7 +675,7 @@ namespace eastl
 
     template <size_t NW>
     inline typename BitsetBase<NW>::word_type&
-    BitsetBase<NW>::DoGetWord(size_t i)
+    BitsetBase<NW>::DoGetWord(size_type i)
     {
         return mWord[i >> kBitsPerWordShift];
     }
@@ -666,35 +683,35 @@ namespace eastl
 
     template <size_t NW>
     inline typename BitsetBase<NW>::word_type
-    BitsetBase<NW>::DoGetWord(size_t i) const
+    BitsetBase<NW>::DoGetWord(size_type i) const
     {
         return mWord[i >> kBitsPerWordShift];
     }
 
 
     #if(EA_PLATFORM_WORD_SIZE == 4)
-        inline size_t GetFirstBit(uint32_t x)
+        inline uint32_t GetFirstBit(uint32_t x)
         {
             if(x)
             {
-                size_t n = 1;
+                uint32_t n = 1;
 
                 if((x & 0x0000FFFF) == 0) { n += 16; x >>= 16; }
                 if((x & 0x000000FF) == 0) { n +=  8; x >>=  8; }
                 if((x & 0x0000000F) == 0) { n +=  4; x >>=  4; }
                 if((x & 0x00000003) == 0) { n +=  2; x >>=  2; }
 
-                return (n - ((size_t)x & 1));
+                return (n - ((uint32_t)x & 1));
             }
 
             return 32;
         }
     #else
-        inline size_t GetFirstBit(uint64_t x)
+        inline uint32_t GetFirstBit(uint64_t x)
         {
             if(x)
             {
-                size_t n = 1;
+                uint32_t n = 1;
 
                 if((x & 0xFFFFFFFF) == 0) { n += 32; x >>= 32; }
                 if((x & 0x0000FFFF) == 0) { n += 16; x >>= 16; }
@@ -702,7 +719,7 @@ namespace eastl
                 if((x & 0x0000000F) == 0) { n +=  4; x >>=  4; }
                 if((x & 0x00000003) == 0) { n +=  2; x >>=  2; }
 
-                return (n - ((size_t)x & 1));
+                return (n - ((uint32_t)x & 1));
             }
 
             return 64;
@@ -711,31 +728,31 @@ namespace eastl
 
 
     template <size_t NW>
-    inline size_t 
+    inline typename BitsetBase<NW>::size_type 
     BitsetBase<NW>::DoFindFirst() const
     {
-        for(size_t word_index = 0; word_index < NW; ++word_index)
+        for(size_type word_index = 0; word_index < NW; ++word_index)
         {
-            const size_t fbiw = GetFirstBit(mWord[word_index]);
+            const size_type fbiw = GetFirstBit(mWord[word_index]);
 
             if(fbiw != kBitsPerWord)
                 return (word_index * kBitsPerWord) + fbiw;
         }
 
-        return NW * kBitsPerWord;
+        return (size_type)NW * kBitsPerWord;
     }
 
 
     template <size_t NW>
-    inline size_t 
-    BitsetBase<NW>::DoFindNext(size_t last_find) const
+    inline typename BitsetBase<NW>::size_type 
+    BitsetBase<NW>::DoFindNext(size_type last_find) const
     {
         // Start looking from the next bit.
         ++last_find;
 
         // Set initial state based on last find.
-        size_t word_index = static_cast<size_t>(last_find >> kBitsPerWordShift);
-        size_t bit_index  = static_cast<size_t>(last_find  & kBitsPerWordMask);
+        size_type word_index = static_cast<size_type>(last_find >> kBitsPerWordShift);
+        size_type bit_index  = static_cast<size_type>(last_find  & kBitsPerWordMask);
 
         // To do: There probably is a more elegant way to write looping below.
         if(word_index < NW)
@@ -745,7 +762,7 @@ namespace eastl
 
             for(;;)
             {
-                const size_t fbiw = GetFirstBit(this_word);
+                const size_type fbiw = GetFirstBit(this_word);
 
                 if(fbiw != kBitsPerWord)
                     return (word_index * kBitsPerWord) + fbiw;
@@ -757,16 +774,16 @@ namespace eastl
             }
         }
 
-        return NW * kBitsPerWord;
+        return (size_type)NW * kBitsPerWord;
     }
 
 
     #if(EA_PLATFORM_WORD_SIZE == 4)
-        inline size_t GetLastBit(uint32_t x)
+        inline uint32_t GetLastBit(uint32_t x)
         {
             if(x)
             {
-                size_t n = 0;
+                uint32_t n = 0;
 
                 if(x & 0xFFFF0000) { n += 16; x >>= 16; }
                 if(x & 0xFFFFFF00) { n +=  8; x >>=  8; }
@@ -780,11 +797,11 @@ namespace eastl
             return 32;
         }
     #else
-        inline size_t GetLastBit(uint64_t x)
+        inline uint32_t GetLastBit(uint64_t x)
         {
             if(x)
             {
-                size_t n = 0;
+                uint32_t n = 0;
 
                 if(x & UINT64_C(0xFFFFFFFF00000000)) { n += 32; x >>= 32; }
                 if(x & 0xFFFF0000)                   { n += 16; x >>= 16; }
@@ -801,30 +818,30 @@ namespace eastl
     #endif
 
     template <size_t NW>
-    inline size_t 
+    inline typename BitsetBase<NW>::size_type 
     BitsetBase<NW>::DoFindLast() const
     {
-        for(size_t word_index = NW - 1; word_index < NW; --word_index)
+        for(size_t word_index = (size_type)NW - 1; word_index < NW; --word_index)
         {
-            const size_t lbiw = GetLastBit(mWord[word_index]);
+            const size_type lbiw = GetLastBit(mWord[word_index]);
 
             if(lbiw != kBitsPerWord)
                 return (word_index * kBitsPerWord) + lbiw;
         }
 
-        return NW * kBitsPerWord;
+        return (size_type)NW * kBitsPerWord;
     }
 
 
     template <size_t NW>
-    inline size_t 
-    BitsetBase<NW>::DoFindPrev(size_t last_find) const
+    inline typename BitsetBase<NW>::size_type 
+    BitsetBase<NW>::DoFindPrev(size_type last_find) const
     {
         if(last_find > 0)
         {
             // Set initial state based on last find.
-            size_t word_index = static_cast<size_t>(last_find >> kBitsPerWordShift);
-            size_t bit_index  = static_cast<size_t>(last_find  & kBitsPerWordMask);
+            size_type word_index = static_cast<size_type>(last_find >> kBitsPerWordShift);
+            size_type bit_index  = static_cast<size_type>(last_find  & kBitsPerWordMask);
 
             // Mask off subsequent bits of the word so our search becomes a "find last".
             word_type mask      = (~static_cast<word_type>(0) >> (kBitsPerWord - 1 - bit_index)) >> 1; // We do two shifts here because many CPUs ignore requests to shift 32 bit integers by 32 bits, which could be the case above.
@@ -832,7 +849,7 @@ namespace eastl
 
             for(;;)
             {
-                const size_t lbiw = GetLastBit(this_word);
+                const size_type lbiw = GetLastBit(this_word);
 
                 if(lbiw != kBitsPerWord)
                     return (word_index * kBitsPerWord) + lbiw;
@@ -844,7 +861,7 @@ namespace eastl
             }
         }
 
-        return NW * kBitsPerWord;
+        return (size_type)NW * kBitsPerWord;
     }
 
 
@@ -886,14 +903,14 @@ namespace eastl
     }
 
 
-    inline void BitsetBase<1>::operator<<=(size_t n)
+    inline void BitsetBase<1>::operator<<=(size_type n)
     {
         mWord[0] <<= n;
         // We let the parent class turn off any upper bits.
     }
 
 
-    inline void BitsetBase<1>::operator>>=(size_t n)
+    inline void BitsetBase<1>::operator>>=(size_type n)
     {
         mWord[0] >>= n;
     }
@@ -913,7 +930,7 @@ namespace eastl
     }
 
 
-    inline void BitsetBase<1>::set(size_t i, bool value)
+    inline void BitsetBase<1>::set(size_type i, bool value)
     {
         if(value)
             mWord[0] |=  (static_cast<word_type>(1) << i);
@@ -940,18 +957,19 @@ namespace eastl
     }
 
 
-    inline size_t BitsetBase<1>::count() const
+    inline BitsetBase<1>::size_type
+    BitsetBase<1>::count() const
     {
-        #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) // GCC 3.4 or later
+        #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) && !defined(EA_PLATFORM_ANDROID) // GCC 3.4 or later
             #if(EA_PLATFORM_WORD_SIZE == 4)
-                return __builtin_popcountl(mWord[0]);
+                return (size_type)__builtin_popcountl(mWord[0]);
             #else
-                return __builtin_popcountll(mWord[0]);
+                return (size_type)__builtin_popcountll(mWord[0]);
             #endif
-        #elif defined(__GNUC__) && (__GNUC < 3)
+        #elif defined(__GNUC__) && (__GNUC__ < 3)
             return BitsetCountBits(mWord[0]); // GCC 2.x compiler inexplicably blows up on the code below.
         #else
-            size_t n = 0;
+            size_type n = 0;
             for(word_type w = mWord[0]; w; w >>= 4)
                 n += EASTL_BITSET_COUNT_STRING[w & 0xF];
             return n;
@@ -966,30 +984,30 @@ namespace eastl
 
 
     inline BitsetBase<1>::word_type&
-    BitsetBase<1>::DoGetWord(size_t)
+    BitsetBase<1>::DoGetWord(size_type)
     {
         return mWord[0];
     }
 
 
     inline BitsetBase<1>::word_type
-    BitsetBase<1>::DoGetWord(size_t) const
+    BitsetBase<1>::DoGetWord(size_type) const
     {
         return mWord[0];
     }
 
 
-    inline size_t 
+    inline BitsetBase<1>::size_type
     BitsetBase<1>::DoFindFirst() const
     {
         return GetFirstBit(mWord[0]);
     }
 
 
-    inline size_t 
-    BitsetBase<1>::DoFindNext(size_t last_find) const
+    inline BitsetBase<1>::size_type 
+    BitsetBase<1>::DoFindNext(size_type last_find) const
     {
-        if(++last_find < (size_t)kBitsPerWord)
+        if(++last_find < kBitsPerWord)
         {
             // Mask off previous bits of word so our search becomes a "find first".
             const word_type this_word = mWord[0] & ((~static_cast<word_type>(0)) << last_find);
@@ -1001,15 +1019,15 @@ namespace eastl
     }
 
 
-    inline size_t 
+    inline BitsetBase<1>::size_type 
     BitsetBase<1>::DoFindLast() const
     {
         return GetLastBit(mWord[0]);
     }
 
 
-    inline size_t 
-    BitsetBase<1>::DoFindPrev(size_t last_find) const
+    inline BitsetBase<1>::size_type 
+    BitsetBase<1>::DoFindPrev(size_type last_find) const
     {
         if(last_find > 0)
         {
@@ -1067,18 +1085,30 @@ namespace eastl
     }
 
 
-    inline void BitsetBase<2>::operator<<=(size_t n)
+    inline void BitsetBase<2>::operator<<=(size_type n)
     {
-        // If n is very high, kBitsPerWord - n will be a high positive value.
+        if(EASTL_UNLIKELY(n >= kBitsPerWord))   // parent expected to handle high bits and n >= 64
+        {
+            mWord[1] = mWord[0];
+            mWord[0] = 0;
+            n -= kBitsPerWord;
+        }
+
         mWord[1] = (mWord[1] << n) | (mWord[0] >> (kBitsPerWord - n)); // Intentionally use | instead of +.
         mWord[0] <<= n;
         // We let the parent class turn off any upper bits.
     }
 
 
-    inline void BitsetBase<2>::operator>>=(size_t n)
+    inline void BitsetBase<2>::operator>>=(size_type n)
     {
-        // If n is very high, kBitsPerWord - n will be a high positive value.
+        if(EASTL_UNLIKELY(n >= kBitsPerWord))   // parent expected to handle n >= 64
+        {
+            mWord[0] = mWord[1];
+            mWord[1] = 0;
+            n -= kBitsPerWord;
+        }
+
         mWord[0] = (mWord[0] >> n) | (mWord[1] << (kBitsPerWord - n)); // Intentionally use | instead of +.
         mWord[1] >>= n;
     }
@@ -1100,7 +1130,7 @@ namespace eastl
     }
 
 
-    inline void BitsetBase<2>::set(size_t i, bool value)
+    inline void BitsetBase<2>::set(size_type i, bool value)
     {
         if(value)
             mWord[i >> kBitsPerWordShift] |=  (static_cast<word_type>(1) << (i & kBitsPerWordMask));
@@ -1129,13 +1159,14 @@ namespace eastl
     }
 
 
-    inline size_t BitsetBase<2>::count() const
+    inline BitsetBase<2>::size_type
+    BitsetBase<2>::count() const
     {
-        #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) // GCC 3.4 or later
+        #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) && !defined(EA_PLATFORM_ANDROID) // GCC 3.4 or later
             #if(EA_PLATFORM_WORD_SIZE == 4)
-                return __builtin_popcountl(mWord[0]) + __builtin_popcountl(mWord[1]);
+                return (size_type)__builtin_popcountl(mWord[0])  + (size_type)__builtin_popcountl(mWord[1]);
             #else
-                return __builtin_popcountll(mWord[0]) + __builtin_popcountll(mWord[1]);
+                return (size_type)__builtin_popcountll(mWord[0]) + (size_type)__builtin_popcountll(mWord[1]);
             #endif
 
         #else
@@ -1155,23 +1186,23 @@ namespace eastl
 
 
     inline BitsetBase<2>::word_type&
-    BitsetBase<2>::DoGetWord(size_t i)
+    BitsetBase<2>::DoGetWord(size_type i)
     {
         return mWord[i >> kBitsPerWordShift];
     }
 
 
     inline BitsetBase<2>::word_type
-    BitsetBase<2>::DoGetWord(size_t i) const
+    BitsetBase<2>::DoGetWord(size_type i) const
     {
         return mWord[i >> kBitsPerWordShift];
     }
 
 
-    inline size_t 
+    inline BitsetBase<2>::size_type 
     BitsetBase<2>::DoFindFirst() const
     {
-        size_t fbiw = GetFirstBit(mWord[0]);
+        size_type fbiw = GetFirstBit(mWord[0]);
 
         if(fbiw != kBitsPerWord)
             return fbiw;
@@ -1185,17 +1216,17 @@ namespace eastl
     }
 
 
-    inline size_t 
-    BitsetBase<2>::DoFindNext(size_t last_find) const
+    inline BitsetBase<2>::size_type 
+    BitsetBase<2>::DoFindNext(size_type last_find) const
     {
         // If the last find was in the first word, we must check it and then possibly the second.
-        if(++last_find < (size_t)kBitsPerWord)
+        if(++last_find < (size_type)kBitsPerWord)
         {
             // Mask off previous bits of word so our search becomes a "find first".
             word_type this_word = mWord[0] & ((~static_cast<word_type>(0)) << last_find);
 
             // Step through words.
-            size_t fbiw = GetFirstBit(this_word);
+            size_type fbiw = GetFirstBit(this_word);
 
             if(fbiw != kBitsPerWord)
                 return fbiw;
@@ -1205,7 +1236,7 @@ namespace eastl
             if(fbiw != kBitsPerWord)
                 return kBitsPerWord + fbiw;
         }
-        else if(last_find < (size_t)(2 * kBitsPerWord))
+        else if(last_find < (size_type)(2 * kBitsPerWord))
         {
             // The last find was in the second word, remove the bit count of the first word from the find.
             last_find -= kBitsPerWord;
@@ -1213,7 +1244,7 @@ namespace eastl
             // Mask off previous bits of word so our search becomes a "find first".
             word_type this_word = mWord[1] & ((~static_cast<word_type>(0)) << last_find);
 
-            const size_t fbiw = GetFirstBit(this_word);
+            const size_type fbiw = GetFirstBit(this_word);
 
             if(fbiw != kBitsPerWord)
                 return kBitsPerWord + fbiw;
@@ -1223,10 +1254,10 @@ namespace eastl
     }
 
 
-    inline size_t 
+    inline BitsetBase<2>::size_type 
     BitsetBase<2>::DoFindLast() const
     {
-        size_t lbiw = GetLastBit(mWord[1]);
+        size_type lbiw = GetLastBit(mWord[1]);
 
         if(lbiw != kBitsPerWord)
             return kBitsPerWord + lbiw;
@@ -1240,11 +1271,11 @@ namespace eastl
     }
 
 
-    inline size_t 
-    BitsetBase<2>::DoFindPrev(size_t last_find) const
+    inline BitsetBase<2>::size_type 
+    BitsetBase<2>::DoFindPrev(size_type last_find) const
     {
         // If the last find was in the second word, we must check it and then possibly the first.
-        if(last_find > (size_t)kBitsPerWord)
+        if(last_find > (size_type)kBitsPerWord)
         {
             // This has the same effect as last_find %= kBitsPerWord in our case.
             last_find -= kBitsPerWord;
@@ -1253,7 +1284,7 @@ namespace eastl
             word_type this_word = mWord[1] & ((~static_cast<word_type>(0)) >> (kBitsPerWord - last_find));
 
             // Step through words.
-            size_t lbiw = GetLastBit(this_word);
+            size_type lbiw = GetLastBit(this_word);
 
             if(lbiw != kBitsPerWord)
                 return kBitsPerWord + lbiw;
@@ -1268,7 +1299,7 @@ namespace eastl
             // Mask off previous bits of word so our search becomes a "find first".
             word_type this_word = mWord[0] & ((~static_cast<word_type>(0)) >> (kBitsPerWord - last_find));
 
-            const size_t lbiw = GetLastBit(this_word);
+            const size_type lbiw = GetLastBit(this_word);
 
             if(lbiw != kBitsPerWord)
                 return lbiw;
@@ -1284,7 +1315,7 @@ namespace eastl
     ///////////////////////////////////////////////////////////////////////////
 
     template <size_t N>
-    inline bitset<N>::reference::reference(const bitset& x, size_t i)
+    inline bitset<N>::reference::reference(const bitset& x, size_type i)
         : mpBitWord(&const_cast<bitset&>(x).DoGetWord(i)),
           mnBitIndex(i & kBitsPerWordMask)
     {   // We have an issue here because the above is casting away the const-ness of the source bitset.
@@ -1392,9 +1423,9 @@ namespace eastl
 
     template <size_t N>
     inline typename bitset<N>::this_type&
-    bitset<N>::operator<<=(size_t n)
+    bitset<N>::operator<<=(size_type n)
     {
-        if(EASTL_LIKELY(n < N))
+        if(EASTL_LIKELY((intptr_t)n < (intptr_t)N))
         {
             base_type::operator<<=(n);
             if((N & kBitsPerWordMask) || (N == 0)) // If there are any high bits to clear... (If we didn't have this check, then the code below would do the wrong thing when N == 32.
@@ -1408,7 +1439,7 @@ namespace eastl
 
     template <size_t N>
     inline typename bitset<N>::this_type&
-    bitset<N>::operator>>=(size_t n)
+    bitset<N>::operator>>=(size_type n)
     {
         if(EASTL_LIKELY(n < N))
             base_type::operator>>=(n);
@@ -1431,7 +1462,7 @@ namespace eastl
 
     template <size_t N>
     inline typename bitset<N>::this_type&
-    bitset<N>::set(size_t i, bool value)
+    bitset<N>::set(size_type i, bool value)
     {
         if(i < N)
             base_type::set(i, value);
@@ -1460,7 +1491,7 @@ namespace eastl
 
     template <size_t N>
     inline typename bitset<N>::this_type&
-    bitset<N>::reset(size_t i)
+    bitset<N>::reset(size_type i)
     {
         if(EASTL_LIKELY(i < N))
             DoGetWord(i) &= ~(static_cast<word_type>(1) << (i & kBitsPerWordMask));
@@ -1491,7 +1522,7 @@ namespace eastl
 
     template <size_t N>
     inline typename bitset<N>::this_type&
-    bitset<N>::flip(size_t i)
+    bitset<N>::flip(size_type i)
     {
         if(EASTL_LIKELY(i < N))
             DoGetWord(i) ^= (static_cast<word_type>(1) << (i & kBitsPerWordMask));
@@ -1519,7 +1550,7 @@ namespace eastl
 
     template <size_t N>
     inline typename bitset<N>::reference
-    bitset<N>::operator[](size_t i)
+    bitset<N>::operator[](size_type i)
     {
         #if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(!(i < N)))
@@ -1531,7 +1562,7 @@ namespace eastl
 
 
     template <size_t N>
-    inline bool bitset<N>::operator[](size_t i) const
+    inline bool bitset<N>::operator[](size_type i) const
     {
         #if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(!(i < N)))
@@ -1564,16 +1595,18 @@ namespace eastl
 
 
     template <size_t N>
-    inline size_t bitset<N>::count() const
+    inline typename bitset<N>::size_type
+    bitset<N>::count() const
     {
         return base_type::count();
     }
 
 
     template <size_t N>
-    inline size_t bitset<N>::size() const
+    inline typename bitset<N>::size_type
+    bitset<N>::size() const
     {
-        return N;
+        return (size_type)N;
     }
 
 
@@ -1592,7 +1625,7 @@ namespace eastl
 
 
     template <size_t N>
-    inline bool bitset<N>::test(size_t i) const
+    inline bool bitset<N>::test(size_type i) const
     {
         if(EASTL_LIKELY(i < N))
             return (DoGetWord(i) & (static_cast<word_type>(1) << (i & kBitsPerWordMask))) != 0;
@@ -1626,7 +1659,7 @@ namespace eastl
 
     template <size_t N>
     inline typename bitset<N>::this_type
-    bitset<N>::operator<<(size_t n) const
+    bitset<N>::operator<<(size_type n) const
     {
         return this_type(*this).operator<<=(n);
     }
@@ -1634,16 +1667,17 @@ namespace eastl
 
     template <size_t N>
     inline typename bitset<N>::this_type
-    bitset<N>::operator>>(size_t n) const
+    bitset<N>::operator>>(size_type n) const
     {
         return this_type(*this).operator>>=(n);
     }
 
 
     template <size_t N>
-    inline size_t bitset<N>::find_first() const
+    inline typename bitset<N>::size_type
+    bitset<N>::find_first() const
     {
-        const size_t i = base_type::DoFindFirst();
+        const size_type i = base_type::DoFindFirst();
 
         if(i < (kNW * kBitsPerWord)) // This multiplication is a compile-time constant.
             return i;
@@ -1653,9 +1687,10 @@ namespace eastl
 
 
     template <size_t N>
-    inline size_t bitset<N>::find_next(size_t last_find) const
+    inline typename bitset<N>::size_type
+    bitset<N>::find_next(size_type last_find) const
     {
-        const size_t i = base_type::DoFindNext(last_find);
+        const size_type i = base_type::DoFindNext(last_find);
 
         if(i < (kNW * kBitsPerWord))// This multiplication is a compile-time constant.
             return i;
@@ -1665,9 +1700,10 @@ namespace eastl
 
 
     template <size_t N>
-    inline size_t bitset<N>::find_last() const
+    inline typename bitset<N>::size_type
+    bitset<N>::find_last() const
     {
-        const size_t i = base_type::DoFindLast();
+        const size_type i = base_type::DoFindLast();
 
         if(i < (kNW * kBitsPerWord)) // This multiplication is a compile-time constant.
             return i;
@@ -1677,9 +1713,10 @@ namespace eastl
 
 
     template <size_t N>
-    inline size_t bitset<N>::find_prev(size_t last_find) const
+    inline typename bitset<N>::size_type
+    bitset<N>::find_prev(size_type last_find) const
     {
-        const size_t i = base_type::DoFindPrev(last_find);
+        const size_type i = base_type::DoFindPrev(last_find);
 
         if(i < (kNW * kBitsPerWord))// This multiplication is a compile-time constant.
             return i;

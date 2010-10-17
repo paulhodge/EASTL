@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -282,10 +282,6 @@ namespace eastl
     /// expect to have a fast size function. The EASTL_LIST_SIZE_CACHE option changes this.
     /// To consider: Make size caching an optional template parameter.
     ///
-    /// To consider: Have the 'void push_back(void)' function return a T& instead
-    /// of void. The reason to not do this is that the implementation would be no
-    /// improvement over the user calling push_back() and then back().
-    ///
     /// Pool allocation
     /// If you want to make a custom memory pool for a list container, your pool 
     /// needs to contain items of type list::node_type. So if you have a memory
@@ -369,11 +365,13 @@ namespace eastl
         reference       back();
         const_reference back() const;
 
-        void push_front(const value_type& value);
-        void push_front();
+        void      push_front(const value_type& value);
+        reference push_front();
+        void*     push_front_uninitialized();
 
-        void push_back(const value_type& value);
-        void push_back();
+        void      push_back(const value_type& value);
+        reference push_back();
+        void*     push_back_uninitialized();
 
         void pop_front();
         void pop_back();
@@ -856,6 +854,13 @@ namespace eastl
     inline typename list<T, Allocator>::reference
     list<T, Allocator>::front()
     {
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+            // We allow the user to reference an empty container.
+        #elif EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(static_cast<node_type*>(mNode.mpNext) == &mNode))
+                EASTL_FAIL_MSG("list::front -- empty container");
+        #endif
+
         return static_cast<node_type*>(mNode.mpNext)->mValue;
     }
 
@@ -864,6 +869,13 @@ namespace eastl
     inline typename list<T, Allocator>::const_reference
     list<T, Allocator>::front() const
     {
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+            // We allow the user to reference an empty container.
+        #elif EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(static_cast<node_type*>(mNode.mpNext) == &mNode))
+                EASTL_FAIL_MSG("list::front -- empty container");
+        #endif
+
         return static_cast<node_type*>(mNode.mpNext)->mValue;
     }
 
@@ -872,6 +884,13 @@ namespace eastl
     inline typename list<T, Allocator>::reference
     list<T, Allocator>::back()
     {
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+            // We allow the user to reference an empty container.
+        #elif EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(static_cast<node_type*>(mNode.mpNext) == &mNode))
+                EASTL_FAIL_MSG("list::back -- empty container");
+        #endif
+
         return static_cast<node_type*>(mNode.mpPrev)->mValue;
     }
 
@@ -880,6 +899,13 @@ namespace eastl
     inline typename list<T, Allocator>::const_reference
     list<T, Allocator>::back() const
     {
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+            // We allow the user to reference an empty container.
+        #elif EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(static_cast<node_type*>(mNode.mpNext) == &mNode))
+                EASTL_FAIL_MSG("list::back -- empty container");
+        #endif
+
         return static_cast<node_type*>(mNode.mpPrev)->mValue;
     }
 
@@ -921,7 +947,9 @@ namespace eastl
     {
         if(this != &x)
         {
-            // We leave mAllocator as-is.
+            #if EASTL_ALLOCATOR_COPY_ENABLED
+                mAllocator = x.mAllocator;
+            #endif
 
             iterator       current((ListNodeBase*)mNode.mpNext);
             const_iterator first((ListNodeBase*)x.mNode.mpNext);
@@ -1019,19 +1047,38 @@ namespace eastl
 
 
     template <typename T, typename Allocator>
-    inline void list<T, Allocator>::push_front()
+    inline typename list<T, Allocator>::reference
+    list<T, Allocator>::push_front()
     {
         node_type* const pNode = DoCreateNode();
         ((ListNodeBase*)pNode)->insert((ListNodeBase*)mNode.mpNext);
         #if EASTL_LIST_SIZE_CACHE
             ++mSize;
         #endif
+        return static_cast<node_type*>(mNode.mpNext)->mValue; // Same as return front();
+    }
+
+
+    template <typename T, typename Allocator>
+    inline void* list<T, Allocator>::push_front_uninitialized()
+    {
+        node_type* const pNode = DoAllocateNode();
+        ((ListNodeBase*)pNode)->insert((ListNodeBase*)mNode.mpNext);
+        #if EASTL_LIST_SIZE_CACHE
+            ++mSize;
+        #endif
+        return &pNode->mValue;
     }
 
 
     template <typename T, typename Allocator>
     inline void list<T, Allocator>::pop_front()
     {
+        #if EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(static_cast<node_type*>(mNode.mpNext) == &mNode))
+                EASTL_FAIL_MSG("list::pop_front -- empty container");
+        #endif
+
         DoErase((ListNodeBase*)mNode.mpNext);
     }
 
@@ -1044,32 +1091,51 @@ namespace eastl
 
 
     template <typename T, typename Allocator>
-    inline void list<T, Allocator>::push_back()
+    inline typename list<T, Allocator>::reference
+    list<T, Allocator>::push_back()
     {
         node_type* const pNode = DoCreateNode();
         ((ListNodeBase*)pNode)->insert((ListNodeBase*)&mNode);
         #if EASTL_LIST_SIZE_CACHE
             ++mSize;
         #endif
+        return static_cast<node_type*>(mNode.mpPrev)->mValue;  // Same as return back();
+    }
+
+
+    template <typename T, typename Allocator>
+    inline void* list<T, Allocator>::push_back_uninitialized()
+    {
+        node_type* const pNode = DoAllocateNode();
+        ((ListNodeBase*)pNode)->insert((ListNodeBase*)&mNode);
+        #if EASTL_LIST_SIZE_CACHE
+            ++mSize;
+        #endif
+        return &pNode->mValue;
     }
 
 
     template <typename T, typename Allocator>
     inline void list<T, Allocator>::pop_back()
     {
+        #if EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(static_cast<node_type*>(mNode.mpNext) == &mNode))
+                EASTL_FAIL_MSG("list::pop_back -- empty container");
+        #endif
+
         DoErase((ListNodeBase*)mNode.mpPrev);
     }
 
 
     template <typename T, typename Allocator>
     inline typename list<T, Allocator>::iterator
-        list<T, Allocator>::insert(iterator position)
+    list<T, Allocator>::insert(iterator position)
     {
         node_type* const pNode = DoCreateNode(value_type());
         ((ListNodeBase*)pNode)->insert((ListNodeBase*)position.mpNode);
-#if EASTL_LIST_SIZE_CACHE
-        ++mSize;
-#endif
+        #if EASTL_LIST_SIZE_CACHE
+            ++mSize;
+        #endif
         return (ListNodeBase*)pNode;
     }
 
@@ -1521,7 +1587,7 @@ namespace eastl
         #if EASTL_EXCEPTIONS_ENABLED
             try
             {
-                new(&pNode->mValue) value_type(value);
+                ::new(&pNode->mValue) value_type(value);
             }
             catch(...)
             {
@@ -1529,7 +1595,7 @@ namespace eastl
                 throw;
             }
         #else
-            new(&pNode->mValue) value_type(value);
+            ::new(&pNode->mValue) value_type(value);
         #endif
 
         return pNode;
@@ -1545,7 +1611,7 @@ namespace eastl
         #if EASTL_EXCEPTIONS_ENABLED
             try
             {
-                new(&pNode->mValue) value_type();
+                ::new(&pNode->mValue) value_type();
             }
             catch(...)
             {
@@ -1553,7 +1619,7 @@ namespace eastl
                 throw;
             }
         #else
-            new(&pNode->mValue) value_type;
+            ::new(&pNode->mValue) value_type;
         #endif
 
         return pNode;

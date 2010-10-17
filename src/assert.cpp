@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -39,9 +39,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <EASTL/string.h>
 #include <EABase/eabase.h>
 
-#ifdef _MSC_VER
+#if defined(EA_PLATFORM_MICROSOFT)
     #pragma warning(push, 0)
-    #include <crtdbg.h>
+    #if defined _MSC_VER
+        #include <crtdbg.h>
+    #endif
     #if defined(EA_PLATFORM_WINDOWS)
         #ifndef WIN32_LEAN_AND_MEAN
             #define WIN32_LEAN_AND_MEAN
@@ -96,8 +98,9 @@ namespace eastl
 #if defined(EA_DEBUG) || defined(_DEBUG)       
         // We cannot use puts() because it appends a newline.
         // We cannot use printf(pExpression) because pExpression might have formatting statements.
-        #if defined(_MSC_VER)
+        #if defined(EA_PLATFORM_MICROSOFT)
             OutputDebugStringA(pExpression);
+            (void)pExpression;
         #else
             printf("%s", pExpression); // Write the message to stdout, which happens to be the trace view for many console debug machines.
         #endif

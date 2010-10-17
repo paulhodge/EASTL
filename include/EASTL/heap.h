@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -480,12 +480,12 @@ namespace eastl
         typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
         typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-        // To do: This can be done more efficiently by migrating the value up or down in place.
-        //        Bug Paul Pedriana if you want to have the more efficient version implemented.
         eastl::remove_heap<RandomAccessIterator, Distance>(first, heapSize, position);
 
+        value_type tempBottom(*(first + heapSize - 1));
+
         eastl::promote_heap<RandomAccessIterator, difference_type, value_type>
-                           (first, (difference_type)0, (difference_type)(heapSize - 1), value_type(*(first + heapSize - 1)));
+                           (first, (difference_type)0, (difference_type)(heapSize - 1), tempBottom);
     }
 
 
@@ -500,12 +500,12 @@ namespace eastl
         typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
         typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-        // To do: This can be done more efficiently by migrating the value up or down in place.
-        //        Bug Paul Pedriana if you want to have the more efficient version implemented.
         eastl::remove_heap<RandomAccessIterator, Distance, Compare>(first, heapSize, position, compare);
 
+        value_type tempBottom(*(first + heapSize - 1));
+
         eastl::promote_heap<RandomAccessIterator, difference_type, value_type, Compare>
-                           (first, (difference_type)0, (difference_type)(heapSize - 1), value_type(*(first + heapSize - 1)), compare);
+                           (first, (difference_type)0, (difference_type)(heapSize - 1), tempBottom, compare);
     }
 
 

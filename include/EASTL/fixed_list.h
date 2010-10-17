@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -45,6 +45,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <EASTL/list.h>
 #include <EASTL/internal/fixed_pool.h>
+#include <EASTL/sort.h>
 
 
 namespace eastl
@@ -83,17 +84,18 @@ namespace eastl
     ///     Allocator              Overflow allocator, which is only used if bEnableOverflow == true. Defaults to the global heap.
     ///
     template <typename T, size_t nodeCount, bool bEnableOverflow = true, typename Allocator = EASTLAllocatorType>
-    class fixed_list : public list<T, fixed_node_pool<sizeof(typename list<T>::node_type), 
+    class fixed_list : public list<T, fixed_node_allocator<sizeof(typename list<T>::node_type), 
                                    nodeCount, list<T>::kAlignment, list<T>::kAlignmentOffset, bEnableOverflow, Allocator> >
     {
     public:
         typedef fixed_list<T, nodeCount, bEnableOverflow, Allocator>                             this_type;
-        typedef fixed_node_pool<sizeof(typename list<T>::node_type), nodeCount, 
+        typedef fixed_node_allocator<sizeof(typename list<T>::node_type), nodeCount, 
                      list<T>::kAlignment, list<T>::kAlignmentOffset, bEnableOverflow, Allocator> fixed_allocator_type;
         typedef list<T, fixed_allocator_type>                                                    base_type;
         typedef typename base_type::size_type                                                    size_type;
         typedef typename base_type::value_type                                                   value_type;
         typedef typename base_type::node_type                                                    node_type;
+        typedef typename base_type::iterator                                                     iterator;
 
         enum
         {
@@ -121,8 +123,23 @@ namespace eastl
 
         void      swap(this_type& x);
         void      reset();
-        size_type max_size() const;     // Returns the max fixed size, which is the user-supplied nodeCount parameter.
-        bool      full() const;         // Returns true if the fixed space is fully allocated. Note that if overflow is enabled, the container size can be greater than nodeCount but full() could return true because the fixed space may have a recently freed slot.
+        size_type max_size() const;         // Returns the max fixed size, which is the user-supplied nodeCount parameter.
+        bool      has_overflowed() const;   // Returns true if the fixed space is fully allocated. Note that if overflow is enabled, the container size can be greater than nodeCount but full() could return true because the fixed space may have a recently freed slot.
+
+        template<typename Compare>
+        void sort(Compare compare);
+        void sort();
+
+        template <typename Compare>
+        void merge(this_type& x, Compare compare);
+        void merge(this_type& x);
+
+        void splice(iterator position, this_type& x);
+        void splice(iterator position, this_type& x, iterator i);
+        void splice(iterator position, this_type& x, iterator first, iterator last);
+
+        // Deprecated:
+        bool      full() const { return has_overflowed(); }
 
     }; // fixed_list
 
@@ -204,6 +221,11 @@ namespace eastl
         if(this != &x)
         {
             base_type::clear();
+
+            #if EASTL_ALLOCATOR_COPY_ENABLED
+                mAllocator = x.mAllocator;
+            #endif
+
             base_type::assign(x.begin(), x.end()); // It would probably be better to implement this like list::operator=.
         }
         return *this;
@@ -235,9 +257,56 @@ namespace eastl
 
 
     template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
-    inline bool fixed_list<T, nodeCount, bEnableOverflow, Allocator>::full() const
+    inline bool fixed_list<T, nodeCount, bEnableOverflow, Allocator>::has_overflowed() const
     {
         return !mAllocator.can_allocate();
+    }
+
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    inline void fixed_list<T, nodeCount, bEnableOverflow, Allocator>::sort()
+    {
+        eastl::insertion_sort(base_type::begin(), base_type::end());
+    }
+
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    template <typename Compare>
+    inline void fixed_list<T, nodeCount, bEnableOverflow, Allocator>::sort(Compare compare)
+    {
+        eastl::insertion_sort(base_type::begin(), base_type::end(), compare);
+    }
+
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    void fixed_list<T, nodeCount, bEnableOverflow, Allocator>::merge(this_type& /*x*/)
+    {
+        // To do.
+    }
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    template <typename Compare>
+    void fixed_list<T, nodeCount, bEnableOverflow, Allocator>::merge(this_type& /*x*/, Compare /*compare*/)
+    {
+        // To do.
+    }
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    void fixed_list<T, nodeCount, bEnableOverflow, Allocator>::splice(iterator /*position*/, this_type& /*x*/)
+    {
+        // To do.
+    }
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    void fixed_list<T, nodeCount, bEnableOverflow, Allocator>::splice(iterator /*position*/, this_type& /*x*/, iterator /*i*/)
+    {
+        // To do.
+    }
+
+    template <typename T, size_t nodeCount, bool bEnableOverflow, typename Allocator>
+    void fixed_list<T, nodeCount, bEnableOverflow, Allocator>::splice(iterator /*position*/, this_type& /*x*/, iterator /*first*/, iterator /*last*/)
+    {
+        // To do.
     }
 
 

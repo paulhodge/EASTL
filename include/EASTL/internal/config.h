@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -131,10 +131,60 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_VERSION
-    #define EASTL_VERSION   "1.10.05"
-    #define EASTL_VERSION_N  11005
+    #define EASTL_VERSION   "1.11.03"
+    #define EASTL_VERSION_N  11103
 #endif
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+// EA_PLATFORM_MICROSOFT
+//
+// Defined as 1 or undefined.
+// Implements support for the definition of EA_PLATFORM_MICROSOFT for the case
+// of using EABase versions prior to the addition of its EA_PLATFORM_MICROSOFT support.
+//
+#if (EABASE_VERSION_N < 20022) && !defined(EA_PLATFORM_MICROSOFT)
+    #if defined(EA_PLATFORM_WINDOWS) || defined(EA_PLATFORM_XENON)
+        #define EA_PLATFORM_MICROSOFT 1
+    #endif
+#endif
+
+
+///////////////////////////////////////////////////////////////////////////////
+// EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+//
+// Defined as 1 or undefined.
+// Implements support for the definition of EA_COMPILER_NO_STANDARD_CPP_LIBRARY for the case
+// of using EABase versions prior to the addition of its EA_COMPILER_NO_STANDARD_CPP_LIBRARY support.
+//
+#if (EABASE_VERSION_N < 20022) && !defined(EA_COMPILER_NO_STANDARD_CPP_LIBRARY)
+    #if defined(EA_PLATFORM_ANDROID)
+        #define EA_COMPILER_NO_STANDARD_CPP_LIBRARY 1
+    #endif
+#endif
+
+
+///////////////////////////////////////////////////////////////////////////////
+// EA_COMPILER_NO_RTTI
+//
+// Defined as 1 or undefined.
+// Implements support for the definition of EA_COMPILER_NO_RTTI for the case
+// of using EABase versions prior to the addition of its EA_COMPILER_NO_RTTI support.
+//
+#if (EABASE_VERSION_N < 20022) && !defined(EA_COMPILER_NO_RTTI)
+    #if defined(__SNC__) && !defined(__RTTI)
+        #define EA_COMPILER_NO_RTTI
+    #elif defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
+        #define EA_COMPILER_NO_RTTI
+    #elif defined(_MSC_VER) && !defined(_CPPRTTI)
+        #define EA_COMPILER_NO_RTTI
+    #elif defined(__MWERKS__)
+        #if !__option(RTTI)
+            #define EA_COMPILER_NO_RTTI
+        #endif
+    #endif
+#endif
 
 
 
@@ -173,6 +223,32 @@ namespace eastl
         #define EASTL_DEBUG 1
     #else
         #define EASTL_DEBUG 0
+    #endif
+#endif
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// EASTL_DEBUGPARAMS_LEVEL
+//
+// EASTL_DEBUGPARAMS_LEVEL controls what debug information is passed through to
+// the allocator by default.
+// This value may be defined by the user ... if not it will default to 1 for
+// EA_DEBUG builds, otherwise 0.
+//
+//  0 - no debug information is passed through to allocator calls.
+//  1 - 'name' is passed through to allocator calls.
+//  2 - 'name', __FILE__, and __LINE__ are passed through to allocator calls.
+//
+// This parameter mirrors the equivalent parameter in the CoreAllocator package.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#ifndef EASTL_DEBUGPARAMS_LEVEL
+    #if EASTL_DEBUG
+        #define EASTL_DEBUGPARAMS_LEVEL 2
+    #else
+        #define EASTL_DEBUGPARAMS_LEVEL 0
     #endif
 #endif
 
@@ -293,7 +369,7 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 // EASTL_ASSERT_ENABLED
 //
-// Defined as an integer >= 0. Default is same as EASTL_DEBUG.
+// Defined as 0 or non-zero. Default is same as EASTL_DEBUG.
 // If EASTL_ASSERT_ENABLED is non-zero, then asserts will be executed via 
 // the assertion mechanism.
 //
@@ -306,6 +382,36 @@ namespace eastl
 
 #ifndef EASTL_ASSERT_ENABLED
     #define EASTL_ASSERT_ENABLED EASTL_DEBUG
+#endif
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+//
+// Defined as 0 or non-zero. Default is same as EASTL_ASSERT_ENABLED.
+// This is like EASTL_ASSERT_ENABLED, except it is for empty container 
+// references. Sometime people like to be able to take a reference to 
+// the front of the container, but not use it if the container is empty.
+// In practice it's often easier and more efficient to do this than to write 
+// extra code to check if the container is empty. 
+//
+// Example usage:
+//     template <typename T, typename Allocator>
+//     inline typename vector<T, Allocator>::reference
+//     vector<T, Allocator>::front()
+//     {
+//         #if EASTL_ASSERT_ENABLED
+//             EASTL_ASSERT(mpEnd > mpBegin);
+//         #endif
+// 
+//         return *mpBegin;
+//     }
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#ifndef EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+    #define EASTL_EMPTY_REFERENCE_ASSERT_ENABLED EASTL_ASSERT_ENABLED
 #endif
 
 
@@ -438,9 +544,9 @@ namespace eastl
         #define EASTL_DEBUG_BREAK() asm volatile("tw 31,1,1")
     #elif defined(EA_PROCESSOR_POWERPC)               // Generic PowerPC. 
         #define EASTL_DEBUG_BREAK() asm(".long 0")    // This triggers an exception by executing opcode 0x00000000.
-    #elif defined(EA_PROCESSOR_X86) && defined(EA_ASM_STYLE_INTEL)
+    #elif (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)) && defined(EA_ASM_STYLE_INTEL)
         #define EASTL_DEBUG_BREAK() { __asm int 3 }
-    #elif defined(EA_PROCESSOR_X86) && defined(EA_ASM_STYLE_ATT)
+    #elif (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)) && (defined(EA_ASM_STYLE_ATT) || defined(__GNUC__))
         #define EASTL_DEBUG_BREAK() asm("int3") 
     #else
         void EASTL_DEBUG_BREAK(); // User must define this externally.
@@ -450,6 +556,20 @@ namespace eastl
 #endif
 
 
+
+///////////////////////////////////////////////////////////////////////////////
+// EASTL_ALLOCATOR_COPY_ENABLED
+//
+// Defined as 0 or 1. Default is 0 (disabled) until some future date.
+// If enabled (1) then container operator= copies the allocator from the 
+// source container. It ideally should be set to enabled but for backwards
+// compatibility with older versions of EASTL it is currently set to 0.
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#ifndef EASTL_ALLOCATOR_COPY_ENABLED
+    #define EASTL_ALLOCATOR_COPY_ENABLED 0
+#endif
 
 
 
@@ -470,7 +590,6 @@ namespace eastl
 
 
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // EASTL_RTTI_ENABLED
 //
@@ -487,18 +606,10 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_RTTI_ENABLED
-    #if defined(_MSC_VER) // Accessed via the /GR compiler option.
-        #ifdef _CPPRTTI
-            #define EASTL_RTTI_ENABLED 1
-        #else
-            #define EASTL_RTTI_ENABLED 0
-        #endif
-    #elif defined(__GNUC__) // Accessed via the -fno-rtti compiler option.
-        #define EASTL_RTTI_ENABLED 0 // How to do this?
-    #elif defined(__MWERKS__)
-        #define EASTL_RTTI_ENABLED 0 // How to do this?
-    #else
+    #if defined(EA_COMPILER_NO_RTTI)
         #define EASTL_RTTI_ENABLED 0
+    #else
+        #define EASTL_RTTI_ENABLED 1
     #endif
 #endif
 
@@ -593,6 +704,20 @@ namespace eastl
 #ifndef EASTL_ABSTRACT_STRING_ENABLED
     #define EASTL_ABSTRACT_STRING_ENABLED 0
 #endif
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// EASTL_BITSET_SIZE_T
+//
+// Defined as 0 or 1. Default is 1.
+// Controls whether bitset uses size_t or eastl_size_t.
+//
+#ifndef EASTL_BITSET_SIZE_T
+    #define EASTL_BITSET_SIZE_T 1
+#endif
+
 
 
 

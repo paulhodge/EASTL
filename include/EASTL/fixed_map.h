@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -79,12 +79,12 @@ namespace eastl
     ///     Allocator              Overflow allocator, which is only used if bEnableOverflow == true. Defaults to the global heap.
     ///
     template <typename Key, typename T, size_t nodeCount, bool bEnableOverflow = true, typename Compare = eastl::less<Key>, typename Allocator = EASTLAllocatorType>
-    class fixed_map : public map<Key, T, Compare, fixed_node_pool<sizeof(typename map<Key, T>::node_type), 
+    class fixed_map : public map<Key, T, Compare, fixed_node_allocator<sizeof(typename map<Key, T>::node_type), 
                                  nodeCount, map<Key, T>::kValueAlignment, map<Key, T>::kValueAlignmentOffset, bEnableOverflow, Allocator> >
     {
     public:
         typedef fixed_map<Key, T, nodeCount, bEnableOverflow, Compare, Allocator>                                  this_type;
-        typedef fixed_node_pool<sizeof(typename map<Key, T>::node_type), nodeCount, 
+        typedef fixed_node_allocator<sizeof(typename map<Key, T>::node_type), nodeCount, 
                      map<Key, T>::kValueAlignment, map<Key, T>::kValueAlignmentOffset, bEnableOverflow, Allocator> fixed_allocator_type;
         typedef map<Key, T, Compare, fixed_allocator_type>                                                         base_type;
         typedef typename base_type::value_type                                                                     value_type;
@@ -219,12 +219,12 @@ namespace eastl
     ///     Allocator              Overflow allocator, which is only used if bEnableOverflow == true. Defaults to the global heap.
     ///
     template <typename Key, typename T, size_t nodeCount, bool bEnableOverflow = true, typename Compare = eastl::less<Key>, typename Allocator = EASTLAllocatorType>
-    class fixed_multimap : public multimap<Key, T, Compare, fixed_node_pool<sizeof(typename multimap<Key, T>::node_type), 
+    class fixed_multimap : public multimap<Key, T, Compare, fixed_node_allocator<sizeof(typename multimap<Key, T>::node_type), 
                                            nodeCount, multimap<Key, T>::kValueAlignment, multimap<Key, T>::kValueAlignmentOffset, bEnableOverflow, Allocator> >
     {
     public:
         typedef fixed_multimap<Key, T, nodeCount, bEnableOverflow, Compare, Allocator>                                       this_type;
-        typedef fixed_node_pool<sizeof(typename multimap<Key, T>::node_type), nodeCount, 
+        typedef fixed_node_allocator<sizeof(typename multimap<Key, T>::node_type), nodeCount, 
                      multimap<Key, T>::kValueAlignment, multimap<Key, T>::kValueAlignmentOffset, bEnableOverflow, Allocator> fixed_allocator_type;
         typedef multimap<Key, T, Compare, fixed_allocator_type>                                                              base_type;
         typedef typename base_type::value_type                                                                               value_type;

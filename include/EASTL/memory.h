@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -179,7 +179,7 @@ namespace eastl
                 try
                 {
                     for(; first != last; ++first, ++dest)
-                        new(&*dest) value_type(*first);
+                        ::new(&*dest) value_type(*first);
                 }
                 catch(...)
                 {
@@ -189,7 +189,7 @@ namespace eastl
                 }
             #else
                 for(; first != last; ++first, ++dest)
-                    new(&*dest) value_type(*first);
+                    ::new(&*dest) value_type(*first);
             #endif
 
             return dest;
@@ -345,7 +345,7 @@ namespace eastl
             try
             {
                 for(; first != last; ++first, ++currentDest)
-                    new(&*currentDest) value_type(*first);
+                    ::new(&*currentDest) value_type(*first);
             }
             catch(...)
             {
@@ -355,7 +355,7 @@ namespace eastl
             }
         #else
             for(; first != last; ++first, ++currentDest)
-                new(&*currentDest) value_type(*first);
+                ::new(&*currentDest) value_type(*first);
         #endif
 
         return currentDest;
@@ -425,7 +425,7 @@ namespace eastl
             try
             {
                 for(; currentDest != last; ++currentDest)
-                    new(&*currentDest) value_type(value);
+                    ::new(&*currentDest) value_type(value);
             }
             catch(...)
             {
@@ -435,7 +435,7 @@ namespace eastl
             }
         #else
             for(; currentDest != last; ++currentDest)
-                new(&*currentDest) value_type(value);
+                ::new(&*currentDest) value_type(value);
         #endif
     }
 
@@ -490,7 +490,7 @@ namespace eastl
             try
             {
                 for(; n > 0; --n, ++currentDest)
-                    new(&*currentDest) value_type(value);
+                    ::new(&*currentDest) value_type(value);
             }
             catch(...)
             {
@@ -500,7 +500,7 @@ namespace eastl
             }
         #else
             for(; n > 0; --n, ++currentDest)
-                new(&*currentDest) value_type(value);
+                ::new(&*currentDest) value_type(value);
         #endif
     }
 

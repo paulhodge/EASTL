@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -41,6 +41,50 @@ namespace eastl
 
     // The following properties or relations are defined here. If the given 
     // item is missing then it simply hasn't been implemented, at least not yet.
+    //   is_array
+    //   is_pointer
+    //   is_reference
+    //   is_member_object_pointer
+    //   is_member_function_pointer
+    //   is_member_pointer
+    //   is_enum
+    //   is_union
+    //   is_class
+    //   is_polymorphic
+    //   is_function
+    //   is_object
+    //   is_scalar
+    //   is_compound
+    //   is_same
+    //   is_convertible
+
+    ///////////////////////////////////////////////////////////////////////
+    // is_array
+    //
+    // is_array<T>::value == true if and only if T is an array type.
+    // As of this writing, the SNC compiler (EDG-based) doesn't compile
+    // the code below and says that returning an array is illegal.
+    //
+    ///////////////////////////////////////////////////////////////////////
+    template <typename T>
+    T (*is_array_tester1(empty<T>))(empty<T>);
+    char is_array_tester1(...);     // May need to use __cdecl under VC++.
+
+    template <typename T>
+    no_type  is_array_tester2(T(*)(empty<T>));
+    yes_type is_array_tester2(...); // May need to use __cdecl under VC++.
+
+    template <typename T>
+    struct is_array_helper {
+        static empty<T> emptyInstance;
+    };
+
+    template <typename T> 
+    struct is_array : public integral_constant<bool,
+        sizeof(is_array_tester2(is_array_tester1(is_array_helper<T>::emptyInstance))) == 1
+    >{};
+
+
 
     ///////////////////////////////////////////////////////////////////////
     // is_reference
@@ -247,7 +291,7 @@ namespace eastl
     struct int_convertible{ int_convertible(int); };
 
     template <bool is_arithmetic_or_reference>
-    struct is_enum_helper { template <typename T> struct nest : is_convertible<T, int_convertible>{}; };
+    struct is_enum_helper { template <typename T> struct nest : public is_convertible<T, int_convertible>{}; };
 
     template <>
     struct is_enum_helper<true> { template <typename T> struct nest : public false_type {}; };
@@ -273,6 +317,115 @@ namespace eastl
 
 
     ///////////////////////////////////////////////////////////////////////
+    // is_polymorphic
+    // 
+    // is_polymorphic<T>::value == true if and only if T is a class or struct 
+    // that declares or inherits a virtual function. is_polymorphic may only 
+    // be applied to complete types.
+    //
+    ///////////////////////////////////////////////////////////////////////
+    template <typename T>
+    struct is_polymorphic_imp1
+    {
+        typedef typename remove_cv<T>::type t;
+
+        struct helper_1 : public t
+        {
+            helper_1();
+            ~helper_1() throw();
+            char pad[64];
+        };
+
+        struct helper_2 : public t
+        {
+            helper_2();
+            virtual ~helper_2() throw();
+            #ifndef _MSC_VER
+                virtual void foo();
+            #endif
+            char pad[64];
+        };
+
+        static const bool value = (sizeof(helper_1) == sizeof(helper_2));
+    };
+
+    template <typename T>
+    struct is_polymorphic_imp2{ static const bool value = false; };
+
+    template <bool is_class>
+    struct is_polymorphic_selector{ template <typename T> struct rebind{ typedef is_polymorphic_imp2<T> type; }; };
+
+    template <>
+    struct is_polymorphic_selector<true>{ template <typename T> struct rebind{ typedef is_polymorphic_imp1<T> type; }; };
+
+    template <typename T>
+    struct is_polymorphic_value{
+        typedef is_polymorphic_selector<is_class<T>::value> selector;
+        typedef typename selector::template rebind<T> binder;
+        typedef typename binder::type imp_type;
+        static const bool value = imp_type::value;
+    };
+
+    template <typename T> 
+    struct is_polymorphic : public integral_constant<bool, is_polymorphic_value<T>::value>{};
+
+
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // is_function
+    //
+    // is_function<T>::value == true  if and only if T is a function type.
+    //
+    ///////////////////////////////////////////////////////////////////////
+    template <typename R> struct is_function_ptr_helper : public false_type{};
+    template <typename R> struct is_function_ptr_helper<R (*)()> : public true_type{};
+    template <typename R, typename Arg0> struct is_function_ptr_helper<R (*)(Arg0)> : public true_type{};
+    template <typename R, typename Arg0, typename Arg1> struct is_function_ptr_helper<R (*)(Arg0, Arg1)> : public true_type{};
+    template <typename R, typename Arg0, typename Arg1, typename Arg2> struct is_function_ptr_helper<R (*)(Arg0, Arg1, Arg2)> : public true_type{};
+    template <typename R, typename Arg0, typename Arg1, typename Arg2, typename Arg3> struct is_function_ptr_helper<R (*)(Arg0, Arg1, Arg2, Arg3)> : public true_type{};
+    template <typename R, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4> struct is_function_ptr_helper<R (*)(Arg0, Arg1, Arg2, Arg3, Arg4)> : public true_type{};
+    template <typename R, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5> struct is_function_ptr_helper<R (*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5)> : public true_type{};
+    template <typename R, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6> struct is_function_ptr_helper<R (*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6)> : public true_type{};
+    template <typename R, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7> struct is_function_ptr_helper<R (*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7)> : public true_type{};
+
+    template <bool is_ref = true>
+    struct is_function_chooser{ template <typename T> struct result_ : public false_type{}; };
+
+    template <>
+    struct is_function_chooser<false>{ template <typename T> struct result_ : public is_function_ptr_helper<T*>{}; };
+
+    template <typename T>
+    struct is_function_value : public is_function_chooser<is_reference<T>::value>::template result_<T>{};
+
+    template <typename T> 
+    struct is_function : public integral_constant<bool, is_function_value<T>::value>{};
+
+
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // is_object
+    //
+    // is_object<T>::value == true if and only if:
+    //    is_reference<T>::value == false, and
+    //    is_function<T>::value == false, and
+    //    is_void<T>::value == false
+    //
+    // The C++ standard, section 3.9p9, states: "An object type is a
+    // (possibly cv-qualified) type that is not a function type, not a 
+    // reference type, and not incomplete (except for an incompletely
+    // defined object type).
+    ///////////////////////////////////////////////////////////////////////
+
+    template <typename T> 
+    struct is_object : public integral_constant<bool,
+        !is_reference<T>::value && !is_void<T>::value && !is_function<T>::value
+    >{};
+
+
+
+    ///////////////////////////////////////////////////////////////////////
     // is_scalar
     //
     // is_scalar<T>::value == true if and only if:
@@ -289,6 +442,26 @@ namespace eastl
     template <typename T> struct is_scalar<T* const> : public true_type {};
     template <typename T> struct is_scalar<T* volatile> : public true_type {};
     template <typename T> struct is_scalar<T* const volatile> : public true_type {};
+
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // is_compound
+    //
+    // Compound means anything but fundamental. See C++ standard, section 3.9.2.
+    //
+    // is_compound<T>::value == true if and only if:
+    //    is_fundamental<T>::value == false
+    //
+    // Thus, is_compound<T>::value == true if and only if:
+    //    is_floating_point<T>::value == false, and
+    //    is_integral<T>::value == false, and
+    //    is_void<T>::value == false
+    //
+    ///////////////////////////////////////////////////////////////////////
+    template <typename T> 
+    struct is_compound : public integral_constant<bool, !is_fundamental<T>::value>{};
+
 
 } // namespace eastl
 

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -63,6 +63,10 @@ namespace eastl
             if(alignment < 1)
                 alignment = 1;
 
+            mpNext      = (Link*)(((uintptr_t)pMemory + (alignment - 1)) & ~(alignment - 1));
+            memorySize -= (uintptr_t)mpNext - (uintptr_t)pMemory;
+            pMemory     = mpNext;
+
             // The node size must be at least as big as a Link, which itself is sizeof(void*).
             if(nodeSize < sizeof(Link))
                 nodeSize = ((sizeof(Link) + (alignment - 1))) & ~(alignment - 1);
@@ -71,14 +75,9 @@ namespace eastl
             // we need to chop down the memory size so that the last node is not a whole node.
             memorySize = (memorySize / nodeSize) * nodeSize;
 
-            // Walk through the memory and create a simple linked list within it.
-            Link* pCurrent = (Link*)(((uintptr_t)pMemory + (alignment - 1)) & ~(alignment - 1));
-            Link* pEnd     = (Link*)((uintptr_t)pMemory + memorySize - nodeSize);
-
-            for(mpHead = pCurrent; pCurrent < pEnd; pCurrent = pCurrent->mpNext)
-                pCurrent->mpNext = (Link*)((uintptr_t)pCurrent + nodeSize);
-
-            pCurrent->mpNext = NULL;
+            mpCapacity = (Link*)((uintptr_t)pMemory + memorySize);
+            mpHead     = NULL;
+            mnNodeSize = nodeSize;
         }
     }
 

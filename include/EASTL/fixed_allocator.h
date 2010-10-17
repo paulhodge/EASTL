@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -162,7 +162,7 @@ namespace eastl
         {
             // To consider: Verify that 'n' is what the user initialized us with.
 
-            Link* const pLink = mpHead;
+            Link* pLink = mpHead;
 
             if(pLink) // If we have space...
             {
@@ -174,9 +174,28 @@ namespace eastl
                 mpHead = pLink->mpNext;
                 return pLink;
             }
+            else
+            {
+                // If there's no free node in the free list, just
+                // allocate another from the reserved memory area
 
-            // EASTL_ASSERT(false); To consider: enable this assert. However, we intentionally disable it because this isn't necessarily an assertable error.
-            return NULL;
+                if(mpNext != mpCapacity)
+                {
+                    pLink = mpNext;
+                    
+                    mpNext = reinterpret_cast<Link*>(reinterpret_cast<char8_t*>(mpNext) + mnNodeSize);
+
+                    #if EASTL_FIXED_SIZE_TRACKING_ENABLED
+                        if(++mnCurrentSize > mnPeakSize)
+                            mnPeakSize = mnCurrentSize;
+                    #endif
+
+                    return pLink;
+                }
+
+                // EASTL_ASSERT(false); To consider: enable this assert. However, we intentionally disable it because this isn't necessarily an assertable error.
+                return NULL;
+            }
         }
 
 
@@ -299,8 +318,14 @@ namespace eastl
         /// useful way, as by their nature the user must manually 
         /// initialize them.
         ///
-        fixed_allocator_with_overflow& operator=(const fixed_allocator_with_overflow&)
+        fixed_allocator_with_overflow& operator=(const fixed_allocator_with_overflow& x)
         {
+            #if EASTL_ALLOCATOR_COPY_ENABLED
+                mOverflowAllocator = x.mOverflowAllocator;
+            #else
+                (void)x;
+            #endif
+
             return *this;
         }
 
@@ -437,38 +462,6 @@ namespace eastl
 
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

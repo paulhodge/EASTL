@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -51,7 +51,7 @@ namespace eastl
     /// value and if any code makes an error and writes to this value with non-zero,
     /// then all existing empty strings will be wrecked and not just the one that
     /// was incorrectly overwritten.
-    EASTL_API uint32_t_may_alias gEmptyString = 0;
+    EASTL_API EmptyString gEmptyString = { 0 };
 
 
 } // namespace eastl

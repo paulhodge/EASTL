@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -158,6 +158,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(push)
     #pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
     #pragma warning(disable: 4267)  // 'argument' : conversion from 'size_t' to 'const uint32_t', possible loss of data. This is a bogus warning resulting from a bug in VC++.
+    #pragma warning(disable: 4480)  // nonstandard extension used: specifying underlying type for enum
 #endif
 
 
@@ -236,9 +237,22 @@ namespace eastl
     ///
     /// Declares a shared terminating 0 representation for scalar strings that are empty.
     ///
-    typedef uint32_t EASTL_MAY_ALIAS uint32_t_may_alias;
-    extern EASTL_API uint32_t_may_alias gEmptyString;
+    union EmptyString
+    {
+        uint32_t       mUint32;
+        char           mEmpty8[1];
+        unsigned char  mEmptyU8[1];
+        signed char    mEmptyS8[1];
+        char16_t       mEmpty16[1];
+        char32_t       mEmpty32[1];
+    };
+    extern EASTL_API EmptyString gEmptyString;
 
+    inline const signed char*   GetEmptyString(signed char)   { return gEmptyString.mEmptyS8;  }
+    inline const unsigned char* GetEmptyString(unsigned char) { return gEmptyString.mEmptyU8;  }
+    inline const char*          GetEmptyString(char)          { return gEmptyString.mEmpty8;  }
+    inline const char16_t*      GetEmptyString(char16_t)      { return gEmptyString.mEmpty16; }
+    inline const char32_t*      GetEmptyString(char32_t)      { return gEmptyString.mEmpty32; }
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -272,8 +286,15 @@ namespace eastl
         typedef ptrdiff_t                                       difference_type;
         typedef Allocator                                       allocator_type;
 
-        static const size_type npos     = (size_type)-1;    /// 'npos' means non-valid position or simply non-position.
-        static const size_type kMaxSize = (size_type)-2;    /// -1 is reserved for 'npos'. It also happens to be slightly beneficial that kMaxSize is a value less than -1, as it helps us deal with potential integer wraparound issues.
+        #if defined(_MSC_VER) && (_MSC_VER >= 1400) // _MSC_VER of 1400 means VC8 (VS2005), 1500 means VC9 (VS2008)
+            enum : size_type {                      // Use Microsoft enum language extension, allowing for smaller debug symbols than using a static const. Users have been affected by this.
+                npos     = (size_type)-1,
+                kMaxSize = (size_type)-2
+            };
+        #else
+            static const size_type npos     = (size_type)-1;      /// 'npos' means non-valid position or simply non-position.
+            static const size_type kMaxSize = (size_type)-2;      /// -1 is reserved for 'npos'. It also happens to be slightly beneficial that kMaxSize is a value less than -1, as it helps us deal with potential integer wraparound issues.
+        #endif
 
         enum
         {
@@ -351,8 +372,8 @@ namespace eastl
         void      resize(size_type n, value_type c);
         void      resize(size_type n);
         void      reserve(size_type = 0);
-        void      set_capacity(size_type n = npos);
-        void      force_size(size_type n);      // Unilaterally moves the string end position (mpEnd) to the given location. Useful for when the user writes into the string via some extenal means such as C strcpy or sprintf.
+        void      set_capacity(size_type n = npos); // Revises the capacity to the user-specified value. Resizes the container to match the capacity if the requested capacity n is less than the current size. If n == npos then the capacity is reallocated (if necessary) such that capacity == size.
+        void      force_size(size_type n);          // Unilaterally moves the string end position (mpEnd) to the given location. Useful for when the user writes into the string via some extenal means such as C strcpy or sprintf. This allows for more efficient use than using resize to achieve this.
 
         // Raw access
         const value_type* data() const;
@@ -642,7 +663,8 @@ namespace eastl
 
     inline char8_t* CharStringUninitializedFillN(char8_t* pDestination, size_t n, const char8_t c)
     {
-        memset(pDestination, (uint8_t)c, (size_t)n);
+        if(n) // Some compilers (e.g. GCC 4.3+) generate a warning (which can't be disabled) if you call memset with a size of 0.
+            memset(pDestination, (uint8_t)c, (size_t)n);
         return pDestination + n;
     }
 
@@ -668,7 +690,9 @@ namespace eastl
 
     inline char8_t* CharTypeAssignN(char8_t* pDestination, size_t n, char8_t c)
     {
-        return (char8_t*)memset(pDestination, c, (size_t)n);
+        if(n) // Some compilers (e.g. GCC 4.3+) generate a warning (which can't be disabled) if you call memset with a size of 0.
+            return (char8_t*)memset(pDestination, c, (size_t)n);
+        return pDestination;
     }
 
     inline char16_t* CharTypeAssignN(char16_t* pDestination, size_t n, char16_t c)
@@ -980,9 +1004,7 @@ namespace eastl
     inline typename basic_string<T, Allocator>::const_reference
     basic_string<T, Allocator>::operator[](size_type n) const
     {
-        #if EASTL_ASSERT_ENABLED
-            // Question: Do we disallow the user to reference the terminating 
-            // 0 char via operator[]? EASTL guaranteeds the presence of such a char.
+        #if EASTL_ASSERT_ENABLED // We allow the user to reference the trailing 0 char without asserting. Perhaps we shouldn't.
             if(EASTL_UNLIKELY(n > (static_cast<size_type>(mpEnd - mpBegin))))
                 EASTL_FAIL_MSG("basic_string::operator[] -- out of range");
         #endif
@@ -995,9 +1017,7 @@ namespace eastl
     inline typename basic_string<T, Allocator>::reference
     basic_string<T, Allocator>::operator[](size_type n)
     {
-        #if EASTL_ASSERT_ENABLED
-            // Question: Do we disallow the user to reference the terminating 
-            // 0 char via operator[]? EASTL guaranteeds the presence of such a char.
+        #if EASTL_ASSERT_ENABLED // We allow the user to reference the trailing 0 char without asserting. Perhaps we shouldn't.
             if(EASTL_UNLIKELY(n > (static_cast<size_type>(mpEnd - mpBegin))))
                 EASTL_FAIL_MSG("basic_string::operator[] -- out of range");
         #endif
@@ -1011,7 +1031,9 @@ namespace eastl
     {
         if(&x != this)
         {
-            // We leave mAllocator and as-is.
+            #if EASTL_ALLOCATOR_COPY_ENABLED
+                mAllocator = x.mAllocator;
+            #endif
 
             assign(x.mpBegin, x.mpEnd);
         }
@@ -1076,8 +1098,6 @@ namespace eastl
                 ThrowLengthException();
         #endif
 
-        n = eastl::max_alt(n, (size_type)(mpEnd - mpBegin)) + 1; // We need the + 1 to accomodate the trailing 0.
-
         // The C++ standard for basic_string doesn't specify if we should or shouldn't 
         // downsize the container. The standard is overly vague in its description of reserve:
         //    The member function reserve() is a directive that informs a 
@@ -1086,7 +1106,10 @@ namespace eastl
         // We will act like the vector container and preserve the contents of 
         // the container and only reallocate if increasing the size. The user 
         // can use the set_capacity function to reduce the capacity.
-        if(n > (size_type)(mpCapacity - mpBegin))  // If there is something to do...
+
+        n = eastl::max_alt(n, (size_type)(mpEnd - mpBegin)); // Calculate the new capacity, which needs to be >= container size.
+
+        if(n >= (size_type)(mpCapacity - mpBegin))  // If there is something to do... // We use >= because mpCapacity accounts for the trailing zero.
             set_capacity(n);
     }
 
@@ -1094,12 +1117,12 @@ namespace eastl
     template <typename T, typename Allocator>
     inline void basic_string<T, Allocator>::set_capacity(size_type n)
     {
-        if(n == npos) // If the user wants to set the capacity to equal the current size...
+        if(n == npos) // If the user wants to set the capacity to equal the current size... // '-1' because we pretend that we didn't allocate memory for the terminating 0.
             n = (size_type)(mpEnd - mpBegin);
         else if(n < (size_type)(mpEnd - mpBegin))
             mpEnd = mpBegin + n;
 
-        if(n != capacity()) // If there is any change...
+        if(n != (size_type)((mpCapacity - mpBegin) - 1)) // If there is any capacity change...
         {
             if(n)
             {
@@ -1167,7 +1190,7 @@ namespace eastl
         #if EASTL_STRING_OPT_RANGE_ERRORS
             if(EASTL_UNLIKELY(n >= (size_type)(mpEnd - mpBegin)))
                 ThrowRangeException();
-        #elif EASTL_ASSERT_ENABLED
+        #elif EASTL_ASSERT_ENABLED                  // We assert if the user references the trailing 0 char.
             if(EASTL_UNLIKELY(n >= (size_type)(mpEnd - mpBegin)))
                 EASTL_FAIL_MSG("basic_string::at -- out of range");
         #endif
@@ -1183,7 +1206,7 @@ namespace eastl
         #if EASTL_STRING_OPT_RANGE_ERRORS
             if(EASTL_UNLIKELY(n >= (size_type)(mpEnd - mpBegin)))
                 ThrowRangeException();
-        #elif EASTL_ASSERT_ENABLED
+        #elif EASTL_ASSERT_ENABLED                  // We assert if the user references the trailing 0 char.
             if(EASTL_UNLIKELY(n >= (size_type)(mpEnd - mpBegin)))
                 EASTL_FAIL_MSG("basic_string::at -- out of range");
         #endif
@@ -1196,9 +1219,11 @@ namespace eastl
     inline typename basic_string<T, Allocator>::reference
     basic_string<T, Allocator>::front()
     {
-        #if EASTL_ASSERT_ENABLED
-            if(EASTL_UNLIKELY(mpEnd <= mpBegin))
-                EASTL_FAIL_MSG("basic_string::front -- empty vector");
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+            // We allow the user to reference the trailing 0 char without asserting.
+        #elif EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We assert if the user references the trailing 0 char.
+                EASTL_FAIL_MSG("basic_string::front -- empty string");
         #endif
 
         return *mpBegin;
@@ -1209,9 +1234,11 @@ namespace eastl
     inline typename basic_string<T, Allocator>::const_reference
     basic_string<T, Allocator>::front() const
     {
-        #if EASTL_ASSERT_ENABLED
-            if(EASTL_UNLIKELY(mpEnd <= mpBegin))
-                EASTL_FAIL_MSG("basic_string::front -- empty vector");
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+            // We allow the user to reference the trailing 0 char without asserting.
+        #elif EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We assert if the user references the trailing 0 char.
+                EASTL_FAIL_MSG("basic_string::front -- empty string");
         #endif
 
         return *mpBegin;
@@ -1222,9 +1249,11 @@ namespace eastl
     inline typename basic_string<T, Allocator>::reference
     basic_string<T, Allocator>::back()
     {
-        #if EASTL_ASSERT_ENABLED
-            if(EASTL_UNLIKELY(mpEnd <= mpBegin))
-                EASTL_FAIL_MSG("basic_string::back -- empty vector");
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+            // We allow the user to reference the trailing 0 char without asserting.
+        #elif EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We assert if the user references the trailing 0 char.
+                EASTL_FAIL_MSG("basic_string::back -- empty string");
         #endif
 
         return *(mpEnd - 1);
@@ -1235,9 +1264,11 @@ namespace eastl
     inline typename basic_string<T, Allocator>::const_reference
     basic_string<T, Allocator>::back() const
     {
-        #if EASTL_ASSERT_ENABLED
-            if(EASTL_UNLIKELY(mpEnd <= mpBegin))
-                EASTL_FAIL_MSG("basic_string::back -- empty vector");
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+            // We allow the user to reference the trailing 0 char without asserting.
+        #elif EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We assert if the user references the trailing 0 char.
+                EASTL_FAIL_MSG("basic_string::back -- empty string");
         #endif
 
         return *(mpEnd - 1);
@@ -1395,7 +1426,7 @@ namespace eastl
             va_copy(argumentsSaved, arguments);
         #endif
 
-        if(mpBegin == (value_type*)&gEmptyString) // We need to do this because non-standard vsnprintf implementations will otherwise overwrite gEmptyString with a non-zero char.
+        if(mpBegin == GetEmptyString(value_type())) // We need to do this because non-standard vsnprintf implementations will otherwise overwrite gEmptyString with a non-zero char.
             nReturnValue = eastl::Vsnprintf(mpEnd, 0, pFormat, arguments);
         else
             nReturnValue = eastl::Vsnprintf(mpEnd, (size_t)(mpCapacity - mpEnd), pFormat, arguments);
@@ -1465,7 +1496,7 @@ namespace eastl
     {
         #if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(mpEnd <= mpBegin))
-                EASTL_FAIL_MSG("basic_string::pop_back -- empty vector");
+                EASTL_FAIL_MSG("basic_string::pop_back -- empty string");
         #endif
 
         mpEnd[-1] = value_type(0);
@@ -2090,7 +2121,7 @@ namespace eastl
     {
         if(mAllocator == x.mAllocator) // If allocators are equivalent...
         {
-            // We leave mAllocator and as-is.
+            // We leave mAllocator as-is.
             eastl::swap(mpBegin,     x.mpBegin);
             eastl::swap(mpEnd,       x.mpEnd);
             eastl::swap(mpCapacity,  x.mpCapacity);
@@ -2827,8 +2858,8 @@ namespace eastl
     template <typename T, typename Allocator>
     inline void basic_string<T, Allocator>::AllocateSelf()
     {
-        EASTL_ASSERT(gEmptyString == 0);
-        mpBegin     = reinterpret_cast<value_type*>(&gEmptyString);
+        EASTL_ASSERT(gEmptyString.mUint32 == 0);
+        mpBegin     = const_cast<value_type*>(GetEmptyString(value_type()));  // In const_cast-int this, we promise not to modify it.
         mpEnd       = mpBegin;
         mpCapacity  = mpBegin + 1; // When we are using gEmptyString, mpCapacity is always mpEnd + 1. This is an important distinguising characteristic.
     }

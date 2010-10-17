@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -1039,7 +1039,7 @@ namespace eastl
         memset(first, (unsigned char)c, (size_t)(last - first));
     }
 
-    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__SNC__) || defined(__ICL) || defined(__PU__) || defined(__SPU__) // SN = SN compiler, ICL = Intel compiler, PU == PS3 processor, SPU = PS3 cell processor
+    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__SNC__) || defined(__ICL) || defined(__PPU__) || defined(__SPU__) // SN = SN compiler, ICL = Intel compiler, PPU == PS3 processor, SPU = PS3 cell processor
         inline void fill(bool* first, bool* last, const bool& b)
         {
             memset(first, (char)b, (size_t)(last - first));
@@ -1119,7 +1119,7 @@ namespace eastl
         return (signed char*)memset(first, (signed char)c, n) + (size_t)n;
     }
 
-    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__SNC__) || defined(__ICL) || defined(__PU__) || defined(__SPU__) // SN = SN compiler, ICL = Intel compiler, PU == PS3 processor, SPU = PS3 cell processor
+    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__SNC__) || defined(__ICL) || defined(__PPU__) || defined(__SPU__) // SN = SN compiler, ICL = Intel compiler, PU == PS3 processor, SPU = PS3 cell processor
         template <typename Size>
         inline bool* fill_n(bool* first, Size n, const bool& b)
         {

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -38,6 +38,81 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace eastl
 {
+
+
+    // The following transformations are defined here. If the given item 
+    // is missing then it simply hasn't been implemented, at least not yet.
+    //    add_unsigned
+    //    add_signed
+    //    remove_const
+    //    remove_volatile
+    //    remove_cv
+    //    add_const
+    //    add_volatile
+    //    add_cv
+    //    remove_reference
+    //    add_reference
+    //    remove_extent
+    //    remove_all_extents
+    //    remove_pointer
+    //    add_pointer
+    //    aligned_storage
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // add_signed
+    //
+    // Adds signed-ness to the given type. 
+    // Modifies only integral values; has no effect on others.
+    // add_signed<int>::type is int
+    // add_signed<unsigned int>::type is int
+    //
+    ///////////////////////////////////////////////////////////////////////
+
+    template<class T>
+    struct add_signed
+    { typedef T type; };
+
+    template<>
+    struct add_signed<unsigned char>
+    { typedef signed char type; };
+
+    #if (defined(CHAR_MAX) && defined(UCHAR_MAX) && (CHAR_MAX == UCHAR_MAX)) // If char is unsigned (which is usually not the case)...
+        template<>
+        struct add_signed<char>
+        { typedef signed char type; };
+    #endif
+
+    template<>
+    struct add_signed<unsigned short>
+    { typedef short type; };
+
+    template<>
+    struct add_signed<unsigned int>
+    { typedef int type; };
+
+    template<>
+    struct add_signed<unsigned long>
+    { typedef long type; };
+
+    template<>
+    struct add_signed<unsigned long long>
+    { typedef long long type; };
+
+    #ifndef EA_WCHAR_T_NON_NATIVE // If wchar_t is a native type instead of simply a define to an existing type...
+        #if (defined(__WCHAR_MAX__) && (__WCHAR_MAX__ == 4294967295U)) // If wchar_t is a 32 bit unsigned value...
+            template<>
+            struct add_signed<wchar_t>
+            { typedef int32_t type; };
+        #elif (defined(__WCHAR_MAX__) && (__WCHAR_MAX__ == 65535)) // If wchar_t is a 16 bit unsigned value...
+            template<>
+            struct add_signed<wchar_t>
+            { typedef int16_t type; };
+        #endif
+    #endif
+
+
+
     ///////////////////////////////////////////////////////////////////////
     // add_unsigned
     //
@@ -56,7 +131,7 @@ namespace eastl
     struct add_unsigned<signed char>
     { typedef unsigned char type; };
 
-    #if (CHAR_MAX == SCHAR_MAX) // If char is signed (which is usually so)...
+    #if (defined(CHAR_MAX) && defined(SCHAR_MAX) && (CHAR_MAX == SCHAR_MAX)) // If char is signed (which is usually so)...
         template<>
         struct add_unsigned<char>
         { typedef unsigned char type; };

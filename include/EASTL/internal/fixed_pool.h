@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -127,6 +127,8 @@ namespace eastl
     template<size_t size>
     struct aligned_buffer<size, 128>  { EA_PREFIX_ALIGN(128) aligned_buffer_char buffer[size] EA_POSTFIX_ALIGN(128); };
 
+    #if !defined(EA_PLATFORM_PSP) // This compiler fails to compile alignment >= 256 and gives an error.
+
     template<size_t size>
     struct aligned_buffer<size, 256>  { EA_PREFIX_ALIGN(256) aligned_buffer_char buffer[size] EA_POSTFIX_ALIGN(256); };
 
@@ -141,6 +143,8 @@ namespace eastl
 
     template<size_t size>
     struct aligned_buffer<size, 4096> { EA_PREFIX_ALIGN(4096) aligned_buffer_char buffer[size] EA_POSTFIX_ALIGN(4096); };
+
+    #endif // EA_PLATFORM_PSP
 
 
 
@@ -161,11 +165,25 @@ namespace eastl
         ///
         fixed_pool_base(void* pMemory = NULL)
             : mpHead((Link*)pMemory)
+            , mpNext((Link*)pMemory)
+            , mpCapacity((Link*)pMemory)
+            #if EASTL_DEBUG
+            , mnNodeSize(0) // This is normally set in the init function.
+            #endif
         {
             #if EASTL_FIXED_SIZE_TRACKING_ENABLED
                 mnCurrentSize = 0;
                 mnPeakSize    = 0;
             #endif
+        }
+
+
+        /// operator=
+        ///
+        fixed_pool_base& operator=(const fixed_pool_base&)
+        {
+            // By design we do nothing. We don't attempt to deep-copy member data. 
+            return *this;
         }
 
 
@@ -201,7 +219,7 @@ namespace eastl
         ///
         bool can_allocate() const
         {
-            return (mpHead != NULL);
+            return (mpHead != NULL) || (mpNext != mpCapacity);
         }
 
     public:
@@ -212,7 +230,10 @@ namespace eastl
             Link* mpNext;
         };
 
-        Link* mpHead;
+        Link*   mpHead;
+        Link*   mpNext;
+        Link*   mpCapacity;
+        size_t  mnNodeSize;
 
         #if EASTL_FIXED_SIZE_TRACKING_ENABLED
             uint32_t mnCurrentSize; /// Current number of allocated nodes.
@@ -264,6 +285,15 @@ namespace eastl
         }
 
 
+        /// operator=
+        ///
+        fixed_pool& operator=(const fixed_pool&)
+        {
+            // By design we do nothing. We don't attempt to deep-copy member data. 
+            return *this;
+        }
+
+
         /// allocate
         ///
         /// Allocates a new object of the size specified upon class initialization.
@@ -271,7 +301,7 @@ namespace eastl
         ///
         void* allocate()
         {
-            Link* const pLink = mpHead;
+            Link* pLink = mpHead;
 
             if(pLink) // If we have space...
             {
@@ -283,9 +313,28 @@ namespace eastl
                 mpHead = pLink->mpNext;
                 return pLink;
             }
+            else
+            {
+                // If there's no free node in the free list, just
+                // allocate another from the reserved memory area
 
-            // EASTL_ASSERT(false); To consider: enable this assert. However, we intentionally disable it because this isn't necessarily an assertable error.
-            return NULL;
+                if(mpNext != mpCapacity)
+                {
+                    pLink = mpNext;
+                    
+                    mpNext = reinterpret_cast<Link*>(reinterpret_cast<char8_t*>(mpNext) + mnNodeSize);
+
+                    #if EASTL_FIXED_SIZE_TRACKING_ENABLED
+                        if(++mnCurrentSize > mnPeakSize)
+                            mnPeakSize = mnCurrentSize;
+                    #endif
+
+                    return pLink;
+                }
+
+                // EASTL_ASSERT(false); To consider: enable this assert. However, we intentionally disable it because this isn't necessarily an assertable error.
+                return NULL;
+            }
         }
 
 
@@ -351,8 +400,20 @@ namespace eastl
             fixed_pool_base::init(pMemory, memorySize, nodeSize, alignment, alignmentOffset);
 
             mpPoolBegin = pMemory;
-            mpPoolEnd   = (void*)((uintptr_t)pMemory + memorySize);
-            mnNodeSize  = (eastl_size_t)nodeSize;
+        }
+
+
+        /// operator=
+        ///
+        fixed_pool_with_overflow& operator=(const fixed_pool_with_overflow& x)
+        {
+            #if EASTL_ALLOCATOR_COPY_ENABLED
+                mOverflowAllocator = x.mOverflowAllocator;
+            #else
+                (void)x;
+            #endif
+
+            return *this;
         }
 
 
@@ -362,22 +423,33 @@ namespace eastl
             fixed_pool_base::init(pMemory, memorySize, nodeSize, alignment, alignmentOffset);
 
             mpPoolBegin = pMemory;
-            mpPoolEnd   = (void*)((uintptr_t)pMemory + memorySize);
-            mnNodeSize  = (eastl_size_t)nodeSize;
         }
 
 
         void* allocate()
         {
-            void* p;
+            void* p     = NULL;
+            Link* pLink = mpHead;
 
-            if(mpHead) // If we have space...
+            if(pLink)
             {
-                p      = mpHead;
-                mpHead = mpHead->mpNext;
+                // Unlink from chain
+                p      = pLink;
+                mpHead = pLink->mpNext;
             }
             else
-                p = mOverflowAllocator.allocate(mnNodeSize);
+            {
+                // If there's no free node in the free list, just
+                // allocate another from the reserved memory area
+
+                if(mpNext != mpCapacity)
+                {
+                    p      = pLink = mpNext;
+                    mpNext = reinterpret_cast<Link*>(reinterpret_cast<char8_t*>(mpNext) + mnNodeSize);
+                }
+                else
+                    p = mOverflowAllocator.allocate(mnNodeSize);
+            }
 
             #if EASTL_FIXED_SIZE_TRACKING_ENABLED
                 if(p && (++mnCurrentSize > mnPeakSize))
@@ -394,7 +466,7 @@ namespace eastl
                 --mnCurrentSize;
             #endif
 
-            if((p >= mpPoolBegin) && (p < mpPoolEnd))
+            if((p >= mpPoolBegin) && (p < mpCapacity))
             {
                 ((Link*)p)->mpNext = mpHead;
                 mpHead = ((Link*)p);
@@ -418,26 +490,27 @@ namespace eastl
             mOverflowAllocator.set_name(pName);
         }
 
-    protected:
-        Allocator          mOverflowAllocator;  // 
-        void*              mpPoolBegin;         // To consider: We have these member variables and ideally we shouldn't need them. The problem is that 
-        void*              mpPoolEnd;           //              the information about the pool buffer and object size is stored in the owning container 
-        eastl_size_t       mnNodeSize;          //              and we can't have access to it without increasing the amount of code we need and by templating 
-                                                //              more code. It may turn out that simply storing data here is smaller in the end.
-    }; // fixed_pool_with_overflow              //              Granted, this class is usually used for debugging purposes, but perhaps there is an elegant solution.
+    public:
+        Allocator  mOverflowAllocator; 
+        void*      mpPoolBegin;         // Ideally we wouldn't need this member variable. he problem is that the information about the pool buffer and object size is stored in the owning container and we can't have access to it without increasing the amount of code we need and by templating more code. It may turn out that simply storing data here is smaller in the end.
+
+    }; // fixed_pool_with_overflow              
 
 
 
 
 
     ///////////////////////////////////////////////////////////////////////////
-    // fixed_node_pool
+    // fixed_node_allocator
     ///////////////////////////////////////////////////////////////////////////
 
-    /// fixed_node_pool
+    /// fixed_node_allocator
+    ///
+    /// Note: This class was previously named fixed_node_pool, but was changed because this name
+    ///       was inconsistent with the other allocators here which ended with _allocator.
     ///
     /// Implements a fixed_pool with a given node count, alignment, and alignment offset.
-    /// fixed_node_pool is like fixed_pool except it is templated on the node type instead
+    /// fixed_node_allocator is like fixed_pool except it is templated on the node type instead
     /// of being a generic allocator. All it does is pass allocations through to
     /// the fixed_pool base. This functionality is separate from fixed_pool because there
     /// are other uses for fixed_pool.
@@ -454,18 +527,19 @@ namespace eastl
     ///     Allocator              Overflow allocator, which is only used if bEnableOverflow == true. Defaults to the global heap.
     ///
     template <size_t nodeSize, size_t nodeCount, size_t nodeAlignment, size_t nodeAlignmentOffset, bool bEnableOverflow, typename Allocator = EASTLAllocatorType>
-    class fixed_node_pool
+    class fixed_node_allocator
     {
     public:
         typedef typename type_select<bEnableOverflow, fixed_pool_with_overflow<Allocator>, fixed_pool>::type  pool_type;
-        typedef fixed_node_pool<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>   this_type;
+        typedef fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>   this_type;
+        typedef Allocator overflow_allocator_type;
 
         enum
         {
             kNodeSize            = nodeSize,
             kNodeCount           = nodeCount,
-            kNodesSize           = nodeCount * nodeSize,
-            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize : 0) + nodeAlignmentOffset,
+            kNodesSize           = nodeCount * nodeSize, // Note that the kBufferSize calculation assumes that the compiler sets sizeof(T) to be a multiple alignof(T), and so sizeof(T) is always >= alignof(T).
+            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize-1 : 0) + nodeAlignmentOffset,
             kNodeAlignment       = nodeAlignment,
             kNodeAlignmentOffset = nodeAlignmentOffset
         };
@@ -474,19 +548,19 @@ namespace eastl
         pool_type mPool;
 
     public:
-        //fixed_node_pool(const char* pName)
+        //fixed_node_allocator(const char* pName)
         //{
         //    mPool.set_name(pName);
         //}
 
 
-        fixed_node_pool(void* pNodeBuffer)
+        fixed_node_allocator(void* pNodeBuffer)
             : mPool(pNodeBuffer, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset)
         {
         }
 
 
-        /// fixed_node_pool
+        /// fixed_node_allocator
         ///
         /// Note that we are copying x.mpHead to our own fixed_pool. This at first may seem 
         /// broken, as fixed pools cannot take over ownership of other fixed pools' memory.
@@ -495,40 +569,39 @@ namespace eastl
         /// This is somewhat playing with fire, but it allows us to get around chicken-and-egg
         /// problems with containers being their own allocators, without incurring any memory
         /// costs or extra code costs. There's another reason for this: we very strongly want
-        /// to avoid full copying of instances of fixed_pool around, espcially via the stack.
+        /// to avoid full copying of instances of fixed_pool around, especially via the stack.
         /// Larger pools won't even be able to fit on many machine's stacks. So this solution
         /// is also a mechanism to prevent that situation from existing and being used. 
         /// Perhaps some day we'll find a more elegant yet costless way around this. 
         ///
-        fixed_node_pool(const this_type& x)
-            : mPool(x.mPool.mpHead, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset)
+        fixed_node_allocator(const this_type& x)
+            : mPool(x.mPool.mpNext, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset)
         {
+            // Problem: how do we copy mPool.mOverflowAllocator if mPool is fixed_pool_with_overflow?
+            // Probably we should use mPool = x.mPool, though it seems a little odd to do so after
+            // doing the copying above.
+            mPool = x.mPool;
         }
 
 
-        this_type& operator=(const this_type&)
+        this_type& operator=(const this_type& x)
         {
-            return *this; // Do nothing. Ignore the source type.
+            mPool = x.mPool;
+            return *this;
         }
 
 
-        #if EASTL_ASSERT_ENABLED
-        void* allocate(size_t   n,   int /*flags*/ = 0)
-        #else
-        void* allocate(size_t /*n*/, int /*flags*/ = 0)
-        #endif
+        void* allocate(size_t n, int /*flags*/ = 0)
         {
+            (void)n;
             EASTL_ASSERT(n == kNodeSize);
             return mPool.allocate();
         }
 
 
-        #if EASTL_ASSERT_ENABLED
-        void* allocate(size_t   n,   size_t /*alignment*/, size_t /*offset*/, int /*flags*/ = 0)
-        #else
-        void* allocate(size_t /*n*/, size_t /*alignment*/, size_t /*offset*/, int /*flags*/ = 0)
-        #endif
+        void* allocate(size_t n, size_t /*alignment*/, size_t /*offset*/, int /*flags*/ = 0)
         {
+            (void)n;
             EASTL_ASSERT(n == kNodeSize);
             return mPool.allocate();
         }
@@ -557,7 +630,7 @@ namespace eastl
         ///
         void reset(void* pNodeBuffer)
         {
-            mPool.init(pNodeBuffer, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset);
+            mPool.init(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset);
         }
 
 
@@ -572,7 +645,126 @@ namespace eastl
             mPool.set_name(pName);
         }
 
-    }; // fixed_node_pool
+
+        overflow_allocator_type& get_overflow_allocator()
+        {
+            return mPool.mOverflowAllocator;
+        }
+
+
+        void set_overflow_allocator(const overflow_allocator_type& allocator)
+        {
+            mPool.mOverflowAllocator = allocator;
+        }
+
+    }; // fixed_node_allocator
+
+
+    // This is a near copy of the code above, with the only difference being 
+    // the 'false' bEnableOverflow template parameter, the pool_type and this_type typedefs, 
+    // and the get_overflow_allocator / set_overflow_allocator functions.
+    template <size_t nodeSize, size_t nodeCount, size_t nodeAlignment, size_t nodeAlignmentOffset, typename Allocator>
+    class fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, false, Allocator>
+    {
+    public:
+        typedef fixed_pool pool_type;
+        typedef fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, false, Allocator>   this_type;
+        typedef Allocator overflow_allocator_type;
+
+        enum
+        {
+            kNodeSize            = nodeSize,
+            kNodeCount           = nodeCount,
+            kNodesSize           = nodeCount * nodeSize, // Note that the kBufferSize calculation assumes that the compiler sets sizeof(T) to be a multiple alignof(T), and so sizeof(T) is always >= alignof(T).
+            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize-1 : 0) + nodeAlignmentOffset,
+            kNodeAlignment       = nodeAlignment,
+            kNodeAlignmentOffset = nodeAlignmentOffset
+        };
+
+    public:
+        pool_type mPool;
+
+    public:
+        fixed_node_allocator(void* pNodeBuffer)
+            : mPool(pNodeBuffer, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset)
+        {
+        }
+
+
+        fixed_node_allocator(const this_type& x)
+            : mPool(x.mPool.mpNext, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset)
+        {
+        }
+
+
+        this_type& operator=(const this_type& x)
+        {
+            mPool = x.mPool;
+            return *this;
+        }
+
+
+        void* allocate(size_t n, int /*flags*/ = 0)
+        {
+            (void)n;
+            EASTL_ASSERT(n == kNodeSize);
+            return mPool.allocate();
+        }
+
+
+        void* allocate(size_t n, size_t /*alignment*/, size_t /*offset*/, int /*flags*/ = 0)
+        {
+            (void)n;
+            EASTL_ASSERT(n == kNodeSize);
+            return mPool.allocate();
+        }
+
+
+        void deallocate(void* p, size_t)
+        {
+            mPool.deallocate(p);
+        }
+
+
+        bool can_allocate() const
+        {
+            return mPool.can_allocate();
+        }
+
+
+        void reset(void* pNodeBuffer)
+        {
+            mPool.init(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset);
+        }
+
+
+        const char* get_name() const
+        {
+            return mPool.get_name();
+        }
+
+
+        void set_name(const char* pName)
+        {
+            mPool.set_name(pName);
+        }
+
+
+        overflow_allocator_type& get_overflow_allocator()
+        {
+            EASTL_ASSERT(false);
+            return *(overflow_allocator_type*)NULL; // This is not pretty.
+        }
+
+
+        void set_overflow_allocator(const overflow_allocator_type& /*allocator*/)
+        {
+            // We don't have an overflow allocator.
+            EASTL_ASSERT(false);
+        }
+
+    }; // fixed_node_allocator
+
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -580,16 +772,16 @@ namespace eastl
     ///////////////////////////////////////////////////////////////////////
 
     template <size_t nodeSize, size_t nodeCount, size_t nodeAlignment, size_t nodeAlignmentOffset, bool bEnableOverflow, typename Allocator>
-    inline bool operator==(const fixed_node_pool<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>& a, 
-                           const fixed_node_pool<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>& b)
+    inline bool operator==(const fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>& a, 
+                           const fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>& b)
     {
         return (&a == &b); // They are only equal if they are the same object.
     }
 
 
     template <size_t nodeSize, size_t nodeCount, size_t nodeAlignment, size_t nodeAlignmentOffset, bool bEnableOverflow, typename Allocator>
-    inline bool operator!=(const fixed_node_pool<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>& a, 
-                           const fixed_node_pool<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>& b)
+    inline bool operator!=(const fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>& a, 
+                           const fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>& b)
     {
         return (&a != &b); // They are only equal if they are the same object.
     }
@@ -606,7 +798,7 @@ namespace eastl
     /// fixed_hashtable_allocator
     ///
     /// Provides a base class for fixed hashtable allocations.
-    /// To consider: Have this inherit from fixed_node_pool.
+    /// To consider: Have this inherit from fixed_node_allocator.
     ///
     /// Template parameters:
     ///     bucketCount            The fixed number of hashtable buckets to provide.
@@ -622,6 +814,7 @@ namespace eastl
     public:
         typedef typename type_select<bEnableOverflow, fixed_pool_with_overflow<Allocator>, fixed_pool>::type                                 pool_type;
         typedef fixed_hashtable_allocator<bucketCount, nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, Allocator>  this_type;
+        typedef Allocator overflow_allocator_type;
 
         enum
         {
@@ -629,14 +822,14 @@ namespace eastl
             kBucketsSize         = bucketCount * sizeof(void*),
             kNodeSize            = nodeSize,
             kNodeCount           = nodeCount,
-            kNodesSize           = nodeCount * nodeSize,
-            kBufferSize          = kBucketsSize + kNodesSize + ((nodeAlignment > 1) ? nodeSize : 0) + nodeAlignmentOffset,
+            kNodesSize           = nodeCount * nodeSize, // Note that the kBufferSize calculation assumes that the compiler sets sizeof(T) to be a multiple alignof(T), and so sizeof(T) is always >= alignof(T).
+            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize-1 : 0) + nodeAlignmentOffset, // Don't need to include kBucketsSize in this calculation, as fixed_hash_xxx containers have a separate buffer for buckets.
             kNodeAlignment       = nodeAlignment,
             kNodeAlignmentOffset = nodeAlignmentOffset,
             kAllocFlagBuckets    = 0x00400000               // Flag to allocator which indicates that we are allocating buckets and not nodes.
         };
 
-    public:
+    protected:
         pool_type mPool;
         void*     mpBucketBuffer;
 
@@ -647,7 +840,7 @@ namespace eastl
         //}
 
         fixed_hashtable_allocator(void* pNodeBuffer)
-            : mPool(pNodeBuffer, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
+            : mPool(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
               mpBucketBuffer(NULL)
         {
             // EASTL_ASSERT(false); // As it stands now, this is not supposed to be called.
@@ -655,7 +848,7 @@ namespace eastl
 
 
         fixed_hashtable_allocator(void* pNodeBuffer, void* pBucketBuffer)
-            : mPool(pNodeBuffer, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
+            : mPool(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
               mpBucketBuffer(pBucketBuffer)
         {
         }
@@ -664,17 +857,22 @@ namespace eastl
         /// fixed_hashtable_allocator
         ///
         /// Note that we are copying x.mpHead and mpBucketBuffer to our own fixed_pool. 
-        /// See the discussion above in fixed_node_pool for important information about this.
+        /// See the discussion above in fixed_node_allocator for important information about this.
         ///
         fixed_hashtable_allocator(const this_type& x)
-            : mPool(x.mPool.mpHead, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
+            : mPool(x.mPool.mpHead, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
               mpBucketBuffer(x.mpBucketBuffer)
         {
+            // Problem: how do we copy mPool.mOverflowAllocator if mPool is fixed_pool_with_overflow?
+            // Probably we should use mPool = x.mPool, though it seems a little odd to do so after
+            // doing the copying above.
+            mPool = x.mPool;
         }
 
 
-        fixed_hashtable_allocator& operator=(const fixed_hashtable_allocator&)
+        fixed_hashtable_allocator& operator=(const fixed_hashtable_allocator& x)
         {
+            mPool = x.mPool;
             return *this; // Do nothing. Ignore the source type.
         }
 
@@ -685,7 +883,7 @@ namespace eastl
             EASTL_CT_ASSERT(kAllocFlagBuckets == 0x00400000); // Currently we expect this to be so, because the hashtable has a copy of this enum.
             if((flags & kAllocFlagBuckets) == 0) // If we are allocating nodes and (probably) not buckets...
             {
-                EASTL_ASSERT(n == kNodeSize);
+                EASTL_ASSERT(n == kNodeSize);  (void)n; // Make unused var warning go away.
                 return mPool.allocate();
             }
 
@@ -699,7 +897,7 @@ namespace eastl
             // We expect that the caller uses kAllocFlagBuckets when it wants us to allocate buckets instead of nodes.
             if((flags & kAllocFlagBuckets) == 0) // If we are allocating nodes and (probably) not buckets...
             {
-                EASTL_ASSERT(n == kNodeSize);
+                EASTL_ASSERT(n == kNodeSize); (void)n; // Make unused var warning go away.
                 return mPool.allocate();
             }
 
@@ -725,7 +923,7 @@ namespace eastl
         void reset(void* pNodeBuffer)
         {
             // No need to modify mpBucketBuffer, as that is constant.
-            mPool.init(pNodeBuffer, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset);
+            mPool.init(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset);
         }
 
 
@@ -738,6 +936,163 @@ namespace eastl
         void set_name(const char* pName)
         {
             mPool.set_name(pName);
+        }
+
+
+        overflow_allocator_type& get_overflow_allocator()
+        {
+            return mPool.mOverflowAllocator;
+        }
+
+
+        void set_overflow_allocator(const overflow_allocator_type& allocator)
+        {
+            mPool.mOverflowAllocator = allocator;
+        }
+
+    }; // fixed_hashtable_allocator
+
+
+    // This is a near copy of the code above, with the only difference being 
+    // the 'false' bEnableOverflow template parameter, the pool_type and this_type typedefs, 
+    // and the get_overflow_allocator / set_overflow_allocator functions.
+    template <size_t bucketCount, size_t nodeSize, size_t nodeCount, size_t nodeAlignment, size_t nodeAlignmentOffset, typename Allocator>
+    class fixed_hashtable_allocator<bucketCount, nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, false, Allocator>
+    {
+    public:
+        typedef fixed_pool pool_type;
+        typedef fixed_hashtable_allocator<bucketCount, nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, false, Allocator>  this_type;
+        typedef Allocator overflow_allocator_type;
+
+        enum
+        {
+            kBucketCount         = bucketCount + 1, // '+1' because the hash table needs a null terminating bucket.
+            kBucketsSize         = bucketCount * sizeof(void*),
+            kNodeSize            = nodeSize,
+            kNodeCount           = nodeCount,
+            kNodesSize           = nodeCount * nodeSize, // Note that the kBufferSize calculation assumes that the compiler sets sizeof(T) to be a multiple alignof(T), and so sizeof(T) is always >= alignof(T).
+            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize-1 : 0) + nodeAlignmentOffset, // Don't need to include kBucketsSize in this calculation, as fixed_hash_xxx containers have a separate buffer for buckets.
+            kNodeAlignment       = nodeAlignment,
+            kNodeAlignmentOffset = nodeAlignmentOffset,
+            kAllocFlagBuckets    = 0x00400000               // Flag to allocator which indicates that we are allocating buckets and not nodes.
+        };
+
+    protected:
+        pool_type mPool;
+        void*     mpBucketBuffer;
+
+    public:
+        //fixed_hashtable_allocator(const char* pName)
+        //{
+        //    mPool.set_name(pName);
+        //}
+
+        fixed_hashtable_allocator(void* pNodeBuffer)
+            : mPool(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
+              mpBucketBuffer(NULL)
+        {
+            // EASTL_ASSERT(false); // As it stands now, this is not supposed to be called.
+        }
+
+
+        fixed_hashtable_allocator(void* pNodeBuffer, void* pBucketBuffer)
+            : mPool(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
+              mpBucketBuffer(pBucketBuffer)
+        {
+        }
+
+
+        /// fixed_hashtable_allocator
+        ///
+        /// Note that we are copying x.mpHead and mpBucketBuffer to our own fixed_pool. 
+        /// See the discussion above in fixed_node_allocator for important information about this.
+        ///
+        fixed_hashtable_allocator(const this_type& x)
+            : mPool(x.mPool.mpHead, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
+              mpBucketBuffer(x.mpBucketBuffer)
+        {
+        }
+
+
+        fixed_hashtable_allocator& operator=(const fixed_hashtable_allocator& x)
+        {
+            mPool = x.mPool;
+            return *this; // Do nothing. Ignore the source type.
+        }
+
+
+        void* allocate(size_t n, int flags = 0)
+        {
+            // We expect that the caller uses kAllocFlagBuckets when it wants us to allocate buckets instead of nodes.
+            EASTL_CT_ASSERT(kAllocFlagBuckets == 0x00400000); // Currently we expect this to be so, because the hashtable has a copy of this enum.
+            if((flags & kAllocFlagBuckets) == 0) // If we are allocating nodes and (probably) not buckets...
+            {
+                EASTL_ASSERT(n == kNodeSize);  (void)n; // Make unused var warning go away.
+                return mPool.allocate();
+            }
+
+            EASTL_ASSERT(n <= kBucketsSize);
+            return mpBucketBuffer;
+        }
+
+
+        void* allocate(size_t n, size_t /*alignment*/, size_t /*offset*/, int flags = 0)
+        {
+            // We expect that the caller uses kAllocFlagBuckets when it wants us to allocate buckets instead of nodes.
+            if((flags & kAllocFlagBuckets) == 0) // If we are allocating nodes and (probably) not buckets...
+            {
+                EASTL_ASSERT(n == kNodeSize); (void)n; // Make unused var warning go away.
+                return mPool.allocate();
+            }
+
+            // To consider: allow for bucket allocations to overflow.
+            EASTL_ASSERT(n <= kBucketsSize);
+            return mpBucketBuffer;
+        }
+
+
+        void deallocate(void* p, size_t)
+        {
+            if(p != mpBucketBuffer) // If we are freeing a node and not buckets...
+                mPool.deallocate(p);
+        }
+
+
+        bool can_allocate() const
+        {
+            return mPool.can_allocate();
+        }
+
+
+        void reset(void* pNodeBuffer)
+        {
+            // No need to modify mpBucketBuffer, as that is constant.
+            mPool.init(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset);
+        }
+
+
+        const char* get_name() const
+        {
+            return mPool.get_name();
+        }
+
+
+        void set_name(const char* pName)
+        {
+            mPool.set_name(pName);
+        }
+
+
+        overflow_allocator_type& get_overflow_allocator()
+        {
+            EASTL_ASSERT(false);
+            return *(overflow_allocator_type*)NULL; // This is not pretty.
+        }
+
+        void set_overflow_allocator(const overflow_allocator_type& /*allocator*/)
+        {
+            // We don't have an overflow allocator.
+            EASTL_ASSERT(false);
         }
 
     }; // fixed_hashtable_allocator
@@ -792,8 +1147,8 @@ namespace eastl
         {
             kNodeSize            = nodeSize,
             kNodeCount           = nodeCount,
-            kNodesSize           = nodeCount * nodeSize,
-            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize : 0) + nodeAlignmentOffset,
+            kNodesSize           = nodeCount * nodeSize, // Note that the kBufferSize calculation assumes that the compiler sets sizeof(T) to be a multiple alignof(T), and so sizeof(T) is always >= alignof(T).
+            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize-1 : 0) + nodeAlignmentOffset,
             kNodeAlignment       = nodeAlignment,
             kNodeAlignmentOffset = nodeAlignmentOffset
         };
@@ -813,8 +1168,14 @@ namespace eastl
         {
         }
 
-        fixed_vector_allocator& operator=(const fixed_vector_allocator&)
+        fixed_vector_allocator& operator=(const fixed_vector_allocator& x)
         {
+            #if EASTL_ALLOCATOR_COPY_ENABLED
+                mOverflowAllocator = x.mOverflowAllocator;
+            #else
+                (void)x;
+            #endif
+
             return *this; // Do nothing. Ignore the source type.
         }
 
@@ -868,8 +1229,8 @@ namespace eastl
         {
             kNodeSize            = nodeSize,
             kNodeCount           = nodeCount,
-            kNodesSize           = nodeCount * nodeSize,
-            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize : 0) + nodeAlignmentOffset,
+            kNodesSize           = nodeCount * nodeSize, // Note that the kBufferSize calculation assumes that the compiler sets sizeof(T) to be a multiple alignof(T), and so sizeof(T) is always >= alignof(T).
+            kBufferSize          = kNodesSize + ((nodeAlignment > 1) ? nodeSize-1 : 0) + nodeAlignmentOffset,
             kNodeAlignment       = nodeAlignment,
             kNodeAlignmentOffset = nodeAlignmentOffset
         };
@@ -909,12 +1270,15 @@ namespace eastl
 
         overflow_allocator_type& get_overflow_allocator()
         {
-            return *(overflow_allocator_type*)NULL; // This is not pretty.
+            EASTL_ASSERT(false);
+            overflow_allocator_type* pNULL = NULL;
+            return *pNULL; // This is not pretty, but it should never execute.
         }
 
         void set_overflow_allocator(const overflow_allocator_type& /*allocator*/)
         {
             // We don't have an overflow allocator.
+            EASTL_ASSERT(false);
         }
 
     }; // fixed_vector_allocator
@@ -979,7 +1343,7 @@ namespace eastl
 
             if(pMemory)
             {
-                Container* const pTemp = new(pMemory) Container(a);
+                Container* const pTemp = ::new(pMemory) Container(a);
                 a = b;
                 b = *pTemp;
 
