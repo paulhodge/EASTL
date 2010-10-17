@@ -8,5 +8,7 @@ This github project only exists to offer up these files in a more convenient
 way, under the terms of EA's license. License terms can be found embedded in
 the source files.
 
+If you're just browsing, then most of the good stuff is under include/EASTL/
+
 To learn more about EASTL, go here:
 http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html
