@@ -1,5 +1,5 @@
 
-CC=g++
+CC=clang++
 CFLAGS=-c -I../include -DEASTL_ASSERT_ENABLED
 LDFLAGS=
 
