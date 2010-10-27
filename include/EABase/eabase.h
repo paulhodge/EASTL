@@ -838,6 +838,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // static_assert is defined by the compiler for both C and C++.
 #elif defined(__GNUC__) && defined(__GXX_EXPERIMENTAL_CXX0X__)
     // static_assert is defined by the compiler.
+#elif defined(__clang__) && __has_feature(cxx_static_assert)
+    // static_assert is defined by the compiler.
 #else
     #if EABASE_STATIC_ASSERT_ENABLED
         #if defined(__COUNTER__) // If this VC++ extension is available...
