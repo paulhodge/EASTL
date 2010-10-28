@@ -1,5 +1,5 @@
 ROOT=.
--include Makefile.top
+-include $(ROOT)/Makefile.top
 
 EASTL_SRC_DIR=$(ROOT)/src
 EASTL_SOURCES=$(EASTL_SRC_DIR)/allocator.cpp \
