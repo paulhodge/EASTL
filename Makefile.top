@@ -1,0 +1,5 @@
+CC=clang++
+CFLAGS=-c -I$(ROOT)/include -DEASTL_ASSERT_ENABLED
+LDFLAGS=
+
+LIBEASTL=$(ROOT)/libeastl.a

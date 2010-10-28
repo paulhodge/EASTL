@@ -1,28 +1,20 @@
+ROOT=..
+-include $(ROOT)/Makefile.top
 
-CC=clang++
-CFLAGS=-c -I../include -DEASTL_ASSERT_ENABLED
-LDFLAGS=
+EXAMPLES=example1.cpp
 
-EASTL_SRC_DIR=../src
-EASTL_SOURCES=$(EASTL_SRC_DIR)/allocator.cpp \
-    $(EASTL_SRC_DIR)/assert.cpp \
-    $(EASTL_SRC_DIR)/fixed_pool.cpp \
-    $(EASTL_SRC_DIR)/hashtable.cpp \
-    $(EASTL_SRC_DIR)/red_black_tree.cpp \
-    $(EASTL_SRC_DIR)/string.cpp
+OBJECTS=$(EXAMPLES:.cpp=.o)
+PROGRAMS=$(EXAMPLES:.cpp=.exe)
 
-SOURCES=example.cpp $(EASTL_SOURCES)
+all: $(PROGRAMS)
 
-OBJECTS=$(SOURCES:.cpp=.o)
-EXE=example
+%.exe: %.o
+	$(CC) $*.o $(LIBEASTL) -o $*.exe
 
-all: $(SOURCES) $(EXE)
-
-$(EXE): $(OBJECTS) 
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+%.o: %.cpp
+	$(CC) $(CFLAGS) $(LDFLAGS) $*.cpp -o $*.o
 
 clean:
-	rm -f $(OBJECTS) $(EXE)
+	rm -f $(OBJECTS) $(PROGRAMS)
 
-.cpp.o:
-	$(CC) $(CFLAGS) $< -o $@
+.phony: $(OBJECTS)
