@@ -21,5 +21,8 @@ all: $(SOURCES) $(EXE)
 $(EXE): $(OBJECTS) 
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 
+clean:
+	rm -f $(OBJECTS) $(EXE)
+
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@
