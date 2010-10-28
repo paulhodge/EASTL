@@ -15,7 +15,7 @@ all: $(EASTL_OBJECTS)
 	ar rcs $(LIBEASTL) $(EASTL_OBJECTS)
 
 %.o: %.cpp
-	$(CC) $(CFLAGS) $*.cpp -o $*.o
+	$(CC) $(CFLAGS) -c $*.cpp -o $*.o
 
 clean:
 	rm -f $(EASTL_OBJECTS) $(LIBEASTL)
