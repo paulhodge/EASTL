@@ -125,6 +125,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <EASTL/allocator.h>
 #include <EASTL/iterator.h>
 #include <EASTL/algorithm.h>
+#ifdef __clang__
+    #include <EASTL/internal/hashtable.h>
+#endif
 
 #ifdef _MSC_VER
     #pragma warning(push, 0)

@@ -329,7 +329,7 @@ namespace eastl
     ///
     template <typename Iterator>
     inline typename eastl::iterator_traits<Iterator>::difference_type
-    distance_fw_impl(Iterator first, Iterator last, EASTL_ITC_NS::input_iterator_tag)
+    distance_fw_impl(Iterator /* first */, Iterator /* last */, EASTL_ITC_NS::input_iterator_tag)
         { return 0; }
 
     template <typename Iterator>
@@ -515,7 +515,7 @@ namespace eastl
         hash_code_base(const ExtractKey& extractKey, const Equal& eq, const H1&, const H2&, const H& h)
             : mExtractKey(extractKey), mEqual(eq), mRangedHash(h) { }
 
-        hash_code_t get_hash_code(const Key& key) const
+        hash_code_t get_hash_code(const Key& /* key */) const
             { return NULL; }
 
         bucket_index_t bucket_index(hash_code_t, uint32_t) const
@@ -533,7 +533,7 @@ namespace eastl
         void copy_code(hash_node<Value, false>*, const hash_node<Value, false>*) const
             { } // Nothing to do.
 
-        void set_code(hash_node<Value, false>* pDest, hash_code_t c) const
+        void set_code(hash_node<Value, false>* /* pDest */, hash_code_t /* c */) const
             { } // Nothing to do.
 
         void base_swap(hash_code_base& x)
@@ -1160,7 +1160,7 @@ namespace eastl
                         while(pNodeSource)
                         {
                             *ppNodeDest = DoAllocateNode(pNodeSource->mValue);
-                            copy_code(*ppNodeDest, pNodeSource);
+                            this->copy_code(*ppNodeDest, pNodeSource);
                             ppNodeDest = &(*ppNodeDest)->mpNext;
                             pNodeSource = pNodeSource->mpNext;
                         }
