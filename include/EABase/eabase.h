@@ -750,6 +750,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             typedef __CHAR16_TYPE__ char16_t;
             typedef __CHAR32_TYPE__ char32_t;
         #endif
+    #elif defined(EA_COMPILER_IS_CPLUSPLUS_0X)
+        typedef char char8_t;
     #elif (EA_WCHAR_SIZE == 2)
         typedef char      char8_t;
         typedef wchar_t   char16_t;
