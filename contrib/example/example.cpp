@@ -32,12 +32,6 @@ int Vsnprintf8(char8_t* pDestination, size_t n,
 #endif
 }
 
-namespace eastl {
-void AssertionFailure(char const* exp) {
-  std::cout << "Assertion Failure: " << exp << std::endl;
-}
-} // namespace eastl
-
 
 void test_hash_map() {
     eastl::hash_map<eastl::string, eastl::string> map;
