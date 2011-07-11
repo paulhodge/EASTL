@@ -154,7 +154,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #ifndef __STDC_FORMAT_MACROS
        #define __STDC_FORMAT_MACROS
     #endif
-    #if !defined(__psp__) // The GCC compiler defines standard int types (e.g. uint32_t) but not PRId8, etc.
+    #if !defined(__psp__) && defined(__GNUC__) // The GCC compiler defines standard int types (e.g. uint32_t) but not PRId8, etc.
         #include <inttypes.h> // PRId8, SCNd8, etc.
     #endif
     #include <stdint.h>   // int32_t, INT64_C, UINT8_MAX, etc.
@@ -717,7 +717,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // in -std=c++0x and -std=gnu++0x modes, as char16_t and char32_t too.
 
 #if !defined(EA_CHAR16_NATIVE)
-    #if defined(_MSC_VER) && (_MSC_VER >= 1600) && defined(_HAS_CHAR16_T_LANGUAGE_SUPPORT) && _HAS_CHAR16_T_LANGUAGE_SUPPORT // VS2010+
+    #if defined(_MSC_VER) && (_MSC_VER >= 1600) && defined(_CHAR16T) || (defined(_HAS_CHAR16_T_LANGUAGE_SUPPORT) && _HAS_CHAR16_T_LANGUAGE_SUPPORT) // VS2010+
         #define EA_CHAR16_NATIVE 1
     #elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 404) && (defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(__STDC_VERSION__)) // g++ (C++ compiler) 4.4+ with -std=c++0x or gcc (C compiler) 4.4+ with -std=gnu99
         #define EA_CHAR16_NATIVE 1
@@ -751,6 +751,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             typedef __CHAR32_TYPE__ char32_t;
         #endif
     #elif (EA_WCHAR_SIZE == 2)
+        #define _CHAR16T
         typedef char      char8_t;
         typedef wchar_t   char16_t;
         typedef uint32_t  char32_t;

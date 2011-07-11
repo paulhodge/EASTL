@@ -772,7 +772,7 @@ namespace eastl
         : base_type(x.mAllocator)
     {
         //insert(iterator((ListNodeBase*)&mNode), const_iterator((ListNodeBase*)x.mNode.mpNext), const_iterator((ListNodeBase*)&x.mNode));
-        DoInsert((ListNodeBase*)&mNode, const_iterator((ListNodeBase*)x.mNode.mpNext), const_iterator((ListNodeBase*)&x.mNode), false_type());
+        DoInsert((ListNodeBase*)&mNode, const_iterator((const ListNodeBase*)x.mNode.mpNext), const_iterator((const ListNodeBase*)&x.mNode), false_type());
     }
 
 
@@ -814,7 +814,7 @@ namespace eastl
     inline typename list<T, Allocator>::const_iterator
     list<T, Allocator>::end() const
     {
-        return const_iterator((ListNodeBase*)&mNode);
+        return const_iterator((const ListNodeBase*)&mNode);
     }
 
 
@@ -830,7 +830,7 @@ namespace eastl
     inline typename list<T, Allocator>::const_reverse_iterator
     list<T, Allocator>::rbegin() const
     {
-        return const_reverse_iterator((ListNodeBase*)&mNode);
+        return const_reverse_iterator((const ListNodeBase*)&mNode);
     }
 
 
@@ -927,15 +927,15 @@ namespace eastl
             #if EASTL_DEBUG
                 const ListNodeBase* p = (ListNodeBase*)mNode.mpNext;
                 size_type n = 0;
-                while(p != (ListNodeBase*)&mNode)
+                while(p != (const ListNodeBase*)&mNode)
                 {
                     ++n;
-                    p = (ListNodeBase*)p->mpNext;
+                    p = (const ListNodeBase*)p->mpNext;
                 }
                 return n;
             #else
                 // The following optimizes to slightly better code than the code above.
-                return (size_type)eastl::distance(const_iterator((ListNodeBase*)mNode.mpNext), const_iterator((ListNodeBase*)&mNode));
+                return (size_type)eastl::distance(const_iterator((const ListNodeBase*)mNode.mpNext), const_iterator((const ListNodeBase*)&mNode));
             #endif
         #endif
     }
@@ -952,8 +952,8 @@ namespace eastl
             #endif
 
             iterator       current((ListNodeBase*)mNode.mpNext);
-            const_iterator first((ListNodeBase*)x.mNode.mpNext);
-            const_iterator last((ListNodeBase*)&x.mNode);
+            const_iterator first((const ListNodeBase*)x.mNode.mpNext);
+            const_iterator last((const ListNodeBase*)&x.mNode);
 
             while((current.mpNode != &mNode) && (first != last))
             {
