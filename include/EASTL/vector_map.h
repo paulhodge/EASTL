@@ -86,12 +86,12 @@ class vector_map {
     { return m_cmp(lhs.first, rhs.first); }
   }; // struct value_compare
 
-  explicit vector_map(key_compare const& cmp = key_compare(), allocator_type const& alloc = allocator_type())
+  explicit vector_map(key_compare const& cmp = key_compare(), allocator_type const& alloc = EASTL_VECTOR_DEFAULT_ALLOCATOR)
       : m_base(alloc), m_cmp(cmp) {}
   template<class InputIterator>
   vector_map(InputIterator first, InputIterator last,
              key_compare const& cmp = key_compare(),
-             allocator_type const& alloc = allocator_type())
+             allocator_type const& alloc = EASTL_VECTOR_DEFAULT_ALLOCATOR)
       : m_base(alloc), m_cmp(cmp)
   {
     ::eastl::map<key_type, mapped_type, key_compare, allocator_type> const tmp(first, last);
