@@ -1,5 +1,7 @@
 #include <string>
 
+#include "test.hpp"
+
 #include <boost/preprocessor/seq/for_each.hpp>
 
 #include <cassert>
