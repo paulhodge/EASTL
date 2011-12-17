@@ -34,11 +34,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *-----------------------------------------------------------------------------
  * Currently supported defines include:
+ *    EA_COMPILER_HAS_C99_TYPES
+ *    EA_COMPILER_HAS_CHAR_16_32
  *    EA_COMPILER_IS_ANSIC
  *    EA_COMPILER_IS_C99
- *    EA_COMPILER_HAS_C99_TYPES
  *    EA_COMPILER_IS_CPLUSPLUS
- *    EA_COMPILER_IS_CPLUSPLUS_0X
+ *    EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+ *    EA_COMPILER_IS_MOVABLE
  *    EA_COMPILER_MANAGED_CPP
  *
  *    EA_ALIGN_OF()
@@ -85,52 +87,52 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INCLUDED_eacompilertraits_H
 #define INCLUDED_eacompilertraits_H
 
-    #ifndef INCLUDED_eaplatform_H
-        #include "EABase/config/eaplatform.h"
-    #endif
+#ifndef INCLUDED_eaplatform_H
+#  include "EABase/config/eaplatform.h"
+#endif
 
-    #ifndef INCLUDED_eacompiler_H
-        #include "EABase/config/eacompiler.h"
-    #endif
+#ifndef INCLUDED_eacompiler_H
+#  include "EABase/config/eacompiler.h"
+#endif
 
     // Metrowerks uses #defines in its core C header files to define 
     // the kind of information we need below (e.g. C99 compatibility)
-    #if defined(__MWERKS__)   
+#if defined(__MWERKS__)   
         // Defining the following causes C99 compilers to enable the macros 
         // associated with the defines. The C99 standard specifies that you 
         // should define these as such.
-        #ifndef __STDC_LIMIT_MACROS
-            #define __STDC_LIMIT_MACROS
-        #endif
+#  ifndef __STDC_LIMIT_MACROS
+#    define __STDC_LIMIT_MACROS
+#  endif
 
-        #ifndef __STDC_CONSTANT_MACROS
-            #define __STDC_CONSTANT_MACROS
-        #endif
+#  ifndef __STDC_CONSTANT_MACROS
+#    define __STDC_CONSTANT_MACROS
+#  endif
 
-        #include <stddef.h>
-    #endif
+#  include <stddef.h>
+#endif
 
-    #if defined(__SNC__) || defined(EA_PLATFORM_PS3) || defined(__S3E__)
-        #ifndef __STDC_LIMIT_MACROS
-            #define __STDC_LIMIT_MACROS
-        #endif
+#if defined(__SNC__) || defined(EA_PLATFORM_PS3) || defined(__S3E__)
+#  ifndef __STDC_LIMIT_MACROS
+#    define __STDC_LIMIT_MACROS
+#  endif
 
-        #ifndef __STDC_CONSTANT_MACROS
-            #define __STDC_CONSTANT_MACROS
-        #endif
+#  ifndef __STDC_CONSTANT_MACROS
+#    define __STDC_CONSTANT_MACROS
+#  endif
 
-        #include <stdint.h>
+#  include <stdint.h>
 
-        #if !defined(EA_COMPILER_HAS_INTTYPES)
-            #if !defined(__S3E__)
-                #define EA_COMPILER_HAS_INTTYPES
-            #endif
-        #endif
-    #endif
+#  if !defined(EA_COMPILER_HAS_INTTYPES)
+#    if !defined(__S3E__)
+#      define EA_COMPILER_HAS_INTTYPES
+#    endif
+#  endif
+#endif
 
     // Determine if this compiler is ANSI C compliant and if it is C99 compliant.
-    #if defined(__STDC__)
-        #define EA_COMPILER_IS_ANSIC    // The compiler claims to be ANSI C
+#if defined(__STDC__)
+#  define EA_COMPILER_IS_ANSIC    // The compiler claims to be ANSI C
 
         // Is the compiler a C99 compiler or equivalent?
         // From ISO/IEC 9899:1999:
@@ -142,56 +144,93 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         //    is that this will remain an integer constant of type long int 
         //    that is increased with each revision of this International Standard.
         //
-        #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-            #define EA_COMPILER_IS_C99
-        #endif
-    #endif
+#  if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#    define EA_COMPILER_IS_C99
+#  endif
+#endif
 
     // Some compilers (e.g. GCC) define __USE_ISOC99 if they are not 
     // strictly C99 compilers (or are simply C++ compilers) but are set 
     // to use C99 functionality. Metrowerks defines _MSL_C99 as 1 in 
     // this case, but 0 otherwise.
-    #if (defined(__USE_ISOC99) || (defined(_MSL_C99) && (_MSL_C99 == 1))) && !defined(EA_COMPILER_IS_C99)
-        #define EA_COMPILER_IS_C99
-    #endif
+#if (defined(__USE_ISOC99) || (defined(_MSL_C99) && (_MSL_C99 == 1))) && !defined(EA_COMPILER_IS_C99)
+#  define EA_COMPILER_IS_C99
+#endif
  
     // Metrowerks defines C99 types (e.g. intptr_t) instrinsically when in C99 mode (-lang C99 on the command line).
-    #if (defined(_MSL_C99) && (_MSL_C99 == 1))
-        #define EA_COMPILER_HAS_C99_TYPES
-    #endif
+#if (defined(_MSL_C99) && (_MSL_C99 == 1))
+#  define EA_COMPILER_HAS_C99_TYPES
+#endif
 
-    #if defined(__GNUC__) 
-        #if (((__GNUC__ * 100) + __GNUC_MINOR__) >= 302) // Also, GCC defines _HAS_C9X.
-            #define EA_COMPILER_HAS_C99_TYPES // The compiler is not necessarily a C99 compiler, but it defines C99 types.
-            
-            #ifndef __STDC_LIMIT_MACROS
-                #define __STDC_LIMIT_MACROS
-            #endif
-            
-            #ifndef __STDC_CONSTANT_MACROS
-                #define __STDC_CONSTANT_MACROS    // This tells the GCC compiler that we want it to use its native C99 types.
-            #endif
-        #endif
-    #endif
+#if defined(__GNUC__) 
+#  if (((__GNUC__ * 100) + __GNUC_MINOR__) >= 302) // Also, GCC defines _HAS_C9X.
+#    define EA_COMPILER_HAS_C99_TYPES // The compiler is not necessarily a C99 compiler, but it defines C99 types.
+#    ifndef __STDC_LIMIT_MACROS
+#      define __STDC_LIMIT_MACROS
+#    endif
+#    ifndef __STDC_CONSTANT_MACROS
+#      define __STDC_CONSTANT_MACROS    // This tells the GCC compiler that we want it to use its native C99 types.
+#    endif
+#  endif
+#  if (defined(__GXX_EXPERIMENTAL_CXX0X__) && !defined(EA_COMPILER_IS_CPLUSPLUS_11_ENABLED))
+#    define EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+#    define EA_COMPILER_IS_MOVABLE
+#  endif
+#  if (__GNUC__ >= 4)
+#    if (__GNUC_MINOR__ >= 4)
+#      ifdef EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+#        define EA_COMPILER_HAS_CHAR_16_32
+#      endif
+#    endif
+#  endif
+#endif
 
-    #ifdef  __cplusplus
-        #define EA_COMPILER_IS_CPLUSPLUS
-        #if (__cplusplus > 199711L)
-            #define EA_COMPILER_IS_CPLUSPLUS_0X
-        #endif
-    #endif
+#if defined(__clang__) 
+#  if (defined(__GXX_EXPERIMENTAL_CXX0X__) && !defined(EA_COMPILER_IS_CPLUSPLUS_11_ENABLED))
+#    define EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+#    define EA_COMPILER_IS_MOVABLE
+#  endif
+#  if (__clang_major__ >= 2)
+#    if (__clang_minor__ >= 9)
+#      define EA_COMPILER_HAS_C99_TYPES
+#      ifdef EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+#        define EA_COMPILER_HAS_CHAR_16_32
+#      endif
+#    endif
+#  endif
+#  ifndef __STDC_LIMIT_MACROS
+#    define __STDC_LIMIT_MACROS
+#  endif
+#  ifndef __STDC_CONSTANT_MACROS
+#    define __STDC_CONSTANT_MACROS    // This tells the GCC compiler that we want it to use its native C99 types.
+#  endif
+#endif
+
+#if defined(_MSC_VER) 
+#  if (_MSC_VER >= 1600)
+#    define EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+#    define EA_COMPILER_IS_MOVABLE
+#  endif
+#endif
+
+#ifdef  __cplusplus
+#  define EA_COMPILER_IS_CPLUSPLUS
+#  if (__cplusplus > 199711L)
+#    define EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
     // EA_COMPILER_MANAGED_CPP
     // Defined if this is being compiled with Managed C++ extensions
-    #ifdef EA_COMPILER_MSVC
-        #if EA_COMPILER_VERSION >= 1300
-            #ifdef _MANAGED
-                #define EA_COMPILER_MANAGED_CPP
-            #endif
-        #endif
-    #endif
+#ifdef EA_COMPILER_MSVC
+#  if EA_COMPILER_VERSION >= 1300
+#    ifdef _MANAGED
+#      define EA_COMPILER_MANAGED_CPP
+#    endif
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -231,74 +270,74 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // the size like postfix does.  Prefix also fails on templates.  So gcc style post fix
     // is still used, but the user will need to use EA_POSTFIX_ALIGN before the constructor parameters.
     // this note by Paul and Frank
-    #if defined(EA_COMPILER_SN) && defined(__GNUC__)  // If using the SN compiler in GCC compatibility mode...
-        #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
-        #define EA_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_PREFIX_ALIGN(n) 
-        #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
-        #define EA_PACKED __attribute__((packed))
+#if defined(EA_COMPILER_SN) && defined(__GNUC__)  // If using the SN compiler in GCC compatibility mode...
+#  define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+#  define EA_ALIGN(n) __attribute__((aligned(n)))
+#  define EA_PREFIX_ALIGN(n) 
+#  define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
+#  define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
+#  define EA_PACKED __attribute__((packed))
 
     // GCC 2.x doesn't support prefix attributes.
-    #elif defined(__GNUC__) && (__GNUC__ < 3)
-        #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
-        #define EA_ALIGN(n)
-        #define EA_PREFIX_ALIGN(n)
-        #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
-        #define EA_PACKED __attribute__((packed))
+#elif defined(__GNUC__) && (__GNUC__ < 3)
+#  define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+#  define EA_ALIGN(n)
+#  define EA_PREFIX_ALIGN(n)
+#  define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
+#  define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
+#  define EA_PACKED __attribute__((packed))
 
     // GCC 3.x+ and IBM C support prefix attributes.
-    #elif (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__xlC__)
-        #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
-        #define EA_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_PREFIX_ALIGN(n)
-        #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
-        #define EA_PACKED __attribute__((packed))
+#elif (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__xlC__)
+#  define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+#  define EA_ALIGN(n) __attribute__((aligned(n)))
+#  define EA_PREFIX_ALIGN(n)
+#  define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
+#  define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
+#  define EA_PACKED __attribute__((packed))
 
     // Metrowerks supports prefix attributes.
     // Metrowerks does not support packed alignment attributes.
-    #elif defined(EA_COMPILER_METROWERKS)
-        #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
-        #define EA_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_PREFIX_ALIGN(n)
-        #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
-        #define EA_PACKED
+#elif defined(EA_COMPILER_METROWERKS)
+#  define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+#  define EA_ALIGN(n) __attribute__((aligned(n)))
+#  define EA_PREFIX_ALIGN(n)
+#  define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
+#  define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
+#  define EA_PACKED
 
     // Microsoft supports prefix alignment via __declspec, but the alignment value must be a literal number, not just a constant expression.
     // Contrary to VC7.x and earlier documentation, __declspec(align) works on stack variables. VC8+ (VS2005+) documents correctly.
     // Microsoft does not support packed alignment attributes; you must use #pragma pack.
-    #elif defined(EA_COMPILER_INTEL) || defined(EA_PLATFORM_XBOX) || (defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1300))
-        #define EA_ALIGN_OF(type) ((size_t)__alignof(type))
-        #define EA_ALIGN(n) __declspec(align(n))
-        #define EA_PREFIX_ALIGN(n) __declspec(align(n))
-        #define EA_POSTFIX_ALIGN(n)
-        #define EA_ALIGNED(variable_type, variable, n) __declspec(align(n)) variable_type variable
-        #define EA_PACKED
+#elif defined(EA_COMPILER_INTEL) || defined(EA_PLATFORM_XBOX) || (defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1300))
+#  define EA_ALIGN_OF(type) ((size_t)__alignof(type))
+#  define EA_ALIGN(n) __declspec(align(n))
+#  define EA_PREFIX_ALIGN(n) __declspec(align(n))
+#  define EA_POSTFIX_ALIGN(n)
+#  define EA_ALIGNED(variable_type, variable, n) __declspec(align(n)) variable_type variable
+#  define EA_PACKED
 
     // Arm brand compiler
-    #elif defined(__ARMCC_VERSION)
-        #define EA_ALIGN_OF(type) ((size_t)__ALIGNOF__(type))
-        #define EA_ALIGN(n) __align(n)
-        #define EA_PREFIX_ALIGN(n) __align(n)
-        #define EA_POSTFIX_ALIGN(n)
-        #define EA_ALIGNED(variable_type, variable, n) __align(n) variable_type variable
-        #define EA_PACKED __packed
+#elif defined(__ARMCC_VERSION)
+#  define EA_ALIGN_OF(type) ((size_t)__ALIGNOF__(type))
+#  define EA_ALIGN(n) __align(n)
+#  define EA_PREFIX_ALIGN(n) __align(n)
+#  define EA_POSTFIX_ALIGN(n)
+#  define EA_ALIGNED(variable_type, variable, n) __align(n) variable_type variable
+#  define EA_PACKED __packed
 
-    #else // Unusual compilers
+#else // Unusual compilers
         // There is nothing we can do about some of these. This is not as bad a problem as it seems.
         // If the given platform/compiler doesn't support alignment specifications, then it's somewhat
         // likely that alignment doesn't matter for that platform. Otherwise they would have defined 
         // functionality to manipulate alignment.
-        #define EA_ALIGN(n)
-        #define EA_PREFIX_ALIGN(n)
-        #define EA_POSTFIX_ALIGN(n)
-        #define EA_ALIGNED(variable_type, variable, n) variable_type variable
-        #define EA_PACKED
+#  define EA_ALIGN(n)
+#  define EA_PREFIX_ALIGN(n)
+#  define EA_POSTFIX_ALIGN(n)
+#  define EA_ALIGNED(variable_type, variable, n) variable_type variable
+#  define EA_PACKED
 
-        #ifdef __cplusplus
+#  ifdef __cplusplus
             template <typename T> struct EAAlignOf1 { enum { s = sizeof (T), value = s ^ (s & (s - 1)) }; };
             template <typename T> struct EAAlignOf2;
             template <int size_diff> struct helper { template <typename T> struct Val { enum { value = size_diff }; }; };
@@ -306,16 +345,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             template <typename T> struct EAAlignOf2 { struct Big { T x; char c; };
             enum { diff = sizeof (Big) - sizeof (T), value = helper<diff>::template Val<Big>::value }; };
             template <typename T> struct EAAlignof3 { enum { x = EAAlignOf2<T>::value, y = EAAlignOf1<T>::value, value = x < y ? x : y }; };
-            #define EA_ALIGN_OF(type) ((size_t)EAAlignof3<type>::value)
+#    define EA_ALIGN_OF(type) ((size_t)EAAlignof3<type>::value)
 
-        #else
+#  else
             // C implementation of EA_ALIGN_OF
             // This implementation works for most cases, but doesn't directly work 
             // for types such as function pointer declarations. To work with those
             // types you need to typedef the type and then use the typedef in EA_ALIGN_OF.
-            #define EA_ALIGN_OF(type) ((size_t)offsetof(struct { char c; type m; }, m))
-        #endif
-    #endif
+#    define EA_ALIGN_OF(type) ((size_t)offsetof(struct { char c; type m; }, m))
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -338,20 +377,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //    if(EA_UNLIKELY(a == 0)) // Tell the compiler that a will usually not equal 0.
     //       { ... }
     //
-    #ifndef EA_LIKELY
-        #if (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__MWERKS__) // Metrowerks supports __builtin_expect, but with some platforms (e.g. Wii) it appears to ignore it.
-            #if defined(__cplusplus)
-                #define EA_LIKELY(x)   __builtin_expect(!!(x), true)
-                #define EA_UNLIKELY(x) __builtin_expect(!!(x), false) 
-            #else
-                #define EA_LIKELY(x)   __builtin_expect(!!(x), 1)
-                #define EA_UNLIKELY(x) __builtin_expect(!!(x), 0) 
-            #endif
-        #else
-            #define EA_LIKELY(x)   (x)
-            #define EA_UNLIKELY(x) (x)
-        #endif
-    #endif
+#ifndef EA_LIKELY
+#  if (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__MWERKS__) // Metrowerks supports __builtin_expect, but with some platforms (e.g. Wii) it appears to ignore it.
+#    if defined(__cplusplus)
+#      define EA_LIKELY(x)   __builtin_expect(!!(x), true)
+#      define EA_UNLIKELY(x) __builtin_expect(!!(x), false) 
+#    else
+#      define EA_LIKELY(x)   __builtin_expect(!!(x), 1)
+#      define EA_UNLIKELY(x) __builtin_expect(!!(x), 0) 
+#    endif
+#  else
+#    define EA_LIKELY(x)   (x)
+#    define EA_UNLIKELY(x) (x)
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -364,13 +403,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // Example usage:
     //     SomeClass gSomeClass EA_INIT_PRIORITY(2000);
     //
-    #if !defined(EA_INIT_PRIORITY)
-        #if defined(__GNUC__)
-            #define EA_INIT_PRIORITY(x)  __attribute__ ((init_priority (x)))
-        #else
-            #define EA_INIT_PRIORITY(x)
-        #endif
-    #endif
+#if !defined(EA_INIT_PRIORITY)
+#  if defined(__GNUC__)
+#    define EA_INIT_PRIORITY(x)  __attribute__ ((init_priority (x)))
+#  else
+#    define EA_INIT_PRIORITY(x)
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -388,11 +427,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //    typedef void* EA_MAY_ALIAS pvoid_may_alias;
     //    pvoid_may_alias gPtr = NULL;
     //
-    #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 303)
-        #define EA_MAY_ALIAS __attribute__((__may_alias__))
-    #else
-        #define EA_MAY_ALIAS
-    #endif
+#if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 303)
+#  define EA_MAY_ALIAS __attribute__((__may_alias__))
+#else
+#  define EA_MAY_ALIAS
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -416,13 +455,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //       }
     //    }
     //
-    #ifndef EA_ASSUME
-        #if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later (including XBox, and XBox 360)...
-            #define EA_ASSUME(x) __assume(x)
-        #else
-            #define EA_ASSUME(x)
-        #endif
-    #endif
+#ifndef EA_ASSUME
+#  if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later (including XBox, and XBox 360)...
+#    define EA_ASSUME(x) __assume(x)
+#  else
+#    define EA_ASSUME(x)
+#  endif
+#endif
 
 
 
@@ -444,15 +483,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // Example usage:
     //    EA_PURE void Function();
     //
-    #ifndef EA_PURE
-        #if defined(EA_COMPILER_GNUC)
-            #define EA_PURE __attribute__((pure))
-        #elif defined(__ARMCC_VERSION)  // Arm brand compiler for ARM CPU
-            #define EA_PURE __pure
-        #else
-            #define EA_PURE
-        #endif
-    #endif
+#ifndef EA_PURE
+#  if defined(EA_COMPILER_GNUC)
+#    define EA_PURE __attribute__((pure))
+#  elif defined(__ARMCC_VERSION)  // Arm brand compiler for ARM CPU
+#    define EA_PURE __pure
+#  else
+#    define EA_PURE
+#  endif
+#endif
 
 
 
@@ -475,21 +514,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // Example usage:
     //    EA_WEAK void Function();
     //
-    #ifndef EA_WEAK
-        #if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later (including XBox)...
-            #define EA_WEAK __declspec(selectany)
-            #define EA_WEAK_SUPPORTED 1
-        #elif defined(_MSC_VER) || (defined(__GNUC__) && defined(__CYGWIN__))
-            #define EA_WEAK
-            #define EA_WEAK_SUPPORTED 0
-        #elif defined(__ARMCC_VERSION)  // Arm brand compiler for ARM CPU
-            #define EA_WEAK __weak
-            #define EA_WEAK_SUPPORTED 1
-        #else                           // GCC and IBM compilers, others.
-            #define EA_WEAK __attribute__((weak))
-            #define EA_WEAK_SUPPORTED 1
-        #endif
-    #endif
+#ifndef EA_WEAK
+#  if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later (including XBox)...
+#    define EA_WEAK __declspec(selectany)
+#    define EA_WEAK_SUPPORTED 1
+#  elif defined(_MSC_VER) || (defined(__GNUC__) && defined(__CYGWIN__))
+#    define EA_WEAK
+#    define EA_WEAK_SUPPORTED 0
+#  elif defined(__ARMCC_VERSION)  // Arm brand compiler for ARM CPU
+#    define EA_WEAK __weak
+#    define EA_WEAK_SUPPORTED 1
+#  else                           // GCC and IBM compilers, others.
+#    define EA_WEAK __attribute__((weak))
+#    define EA_WEAK_SUPPORTED 1
+#  endif
+#endif
 
 
 
@@ -499,73 +538,73 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //    EA_WCHAR_T_NON_NATIVE
     //    EA_WCHAR_SIZE = <sizeof(wchar_t)>
     //
-    #ifndef EA_WCHAR_T_NON_NATIVE
+#ifndef EA_WCHAR_T_NON_NATIVE
         // Compilers that always implement wchar_t as native include:
         //     COMEAU, new SN, and other EDG-based compilers.
         //     GCC
         //     Borland
         //     SunPro
         //     IBM Visual Age
-        #if defined(EA_COMPILER_INTEL)
-            #if (EA_COMPILER_VERSION < 700)
-                #define EA_WCHAR_T_NON_NATIVE 1
-            #else
-                #if (!defined(_WCHAR_T_DEFINED) && !defined(_WCHAR_T))
-                    #define EA_WCHAR_T_NON_NATIVE 1
-                #endif
-            #endif
-        #elif defined(EA_COMPILER_MSVC) || defined(EA_COMPILER_BORLAND)
-            #ifndef _NATIVE_WCHAR_T_DEFINED
-                #define EA_WCHAR_T_NON_NATIVE 1
-            #endif
-        #elif defined(EA_COMPILER_METROWERKS)
-            #if !__option(wchar_type)
-                #define EA_WCHAR_T_NON_NATIVE 1
-            #endif
-        #elif defined(__SNC__) && !defined(__cplusplus) // If compiling C under SNC...
-            #define EA_WCHAR_T_NON_NATIVE 1
-        #endif
-    #endif
+#  if defined(EA_COMPILER_INTEL)
+#    if (EA_COMPILER_VERSION < 700)
+#      define EA_WCHAR_T_NON_NATIVE 1
+#    else
+#      if (!defined(_WCHAR_T_DEFINED) && !defined(_WCHAR_T))
+#        define EA_WCHAR_T_NON_NATIVE 1
+#      endif
+#    endif
+#  elif defined(EA_COMPILER_MSVC) || defined(EA_COMPILER_BORLAND)
+#    ifndef _NATIVE_WCHAR_T_DEFINED
+#      define EA_WCHAR_T_NON_NATIVE 1
+#    endif
+#  elif defined(EA_COMPILER_METROWERKS)
+#    if !__option(wchar_type)
+#      define EA_WCHAR_T_NON_NATIVE 1
+#    endif
+#  elif defined(__SNC__) && !defined(__cplusplus) // If compiling C under SNC...
+#    define EA_WCHAR_T_NON_NATIVE 1
+#  endif
+#endif
 
-    #ifndef EA_WCHAR_SIZE // If the user hasn't specified that it is a given size...
-        #if defined(__WCHAR_MAX__) // GCC defines this for most platforms.
-            #if (__WCHAR_MAX__ == 2147483647) || (__WCHAR_MAX__ == 4294967295)
-                #define EA_WCHAR_SIZE 4
-            #elif (__WCHAR_MAX__ == 32767) || (__WCHAR_MAX__ == 65535)
-                #define EA_WCHAR_SIZE 2
-            #elif (__WCHAR_MAX__ == 127) || (__WCHAR_MAX__ == 255)
-                #define EA_WCHAR_SIZE 1
-            #else
-                #define EA_WCHAR_SIZE 4
-            #endif
-        #elif defined(WCHAR_MAX) // The SN and Arm compilers define this.
-            #if (WCHAR_MAX == 2147483647) || (WCHAR_MAX == 4294967295)
-                #define EA_WCHAR_SIZE 4
-            #elif (WCHAR_MAX == 32767) || (WCHAR_MAX == 65535)
-                #define EA_WCHAR_SIZE 2
-            #elif (WCHAR_MAX == 127) || (WCHAR_MAX == 255)
-                #define EA_WCHAR_SIZE 1
-            #else
-                #define EA_WCHAR_SIZE 4
-            #endif
-        #elif defined(_WCMAX) // The SN and Arm compilers define this.
-            #if (_WCMAX == 2147483647) || (_WCMAX == 4294967295)
-                #define EA_WCHAR_SIZE 4
-            #elif (_WCMAX == 32767) || (_WCMAX == 65535)
-                #define EA_WCHAR_SIZE 2
-            #elif (_WCMAX == 127) || (_WCMAX == 255)
-                #define EA_WCHAR_SIZE 1
-            #else
-                #define EA_WCHAR_SIZE 4
-            #endif
-        #elif defined(EA_PLATFORM_UNIX) || defined(EA_PLATFORM_PS3) || defined(EA_PLATFORM_PS3_SPU)
+#ifndef EA_WCHAR_SIZE // If the user hasn't specified that it is a given size...
+#  if defined(__WCHAR_MAX__) // GCC defines this for most platforms.
+#    if (__WCHAR_MAX__ == 2147483647) || (__WCHAR_MAX__ == 4294967295)
+#      define EA_WCHAR_SIZE 4
+#    elif (__WCHAR_MAX__ == 32767) || (__WCHAR_MAX__ == 65535)
+#      define EA_WCHAR_SIZE 2
+#    elif (__WCHAR_MAX__ == 127) || (__WCHAR_MAX__ == 255)
+#      define EA_WCHAR_SIZE 1
+#    else
+#      define EA_WCHAR_SIZE 4
+#    endif
+#  elif defined(WCHAR_MAX) // The SN and Arm compilers define this.
+#    if (WCHAR_MAX == 2147483647) || (WCHAR_MAX == 4294967295)
+#      define EA_WCHAR_SIZE 4
+#    elif (WCHAR_MAX == 32767) || (WCHAR_MAX == 65535)
+#      define EA_WCHAR_SIZE 2
+#    elif (WCHAR_MAX == 127) || (WCHAR_MAX == 255)
+#      define EA_WCHAR_SIZE 1
+#    else
+#      define EA_WCHAR_SIZE 4
+#    endif
+#  elif defined(_WCMAX) // The SN and Arm compilers define this.
+#    if (_WCMAX == 2147483647) || (_WCMAX == 4294967295)
+#      define EA_WCHAR_SIZE 4
+#    elif (_WCMAX == 32767) || (_WCMAX == 65535)
+#      define EA_WCHAR_SIZE 2
+#    elif (_WCMAX == 127) || (_WCMAX == 255)
+#      define EA_WCHAR_SIZE 1
+#    else
+#      define EA_WCHAR_SIZE 4
+#    endif
+#  elif defined(EA_PLATFORM_UNIX) || defined(EA_PLATFORM_PS3) || defined(EA_PLATFORM_PS3_SPU)
             // It is standard on Unix to have wchar_t be int32_t or uint32_t.
             // All versions of GNUC default to a 32 bit wchar_t, but has been used 
             // with the -fshort-wchar GCC command line option to force it to 16 bit.
             // If you know that the compiler is set to use a wchar_t of other than 
             // the default, you need to manually define EA_WCHAR_SIZE for the build.
-            #define EA_WCHAR_SIZE 4
-        #else
+#    define EA_WCHAR_SIZE 4
+#  else
             // It is standard on Windows to have wchar_t be uint16_t.
             // Metrowerks and the new EDG-based SN compilers define wchar_t 
             // as uint16_t. Given that there is currently no known way to tell at preprocessor 
@@ -574,9 +613,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             // code might not be broken, but it also won't work with wchar libraries
             // and data from other parts of EA. Under GCC, you can force wchar_t 
             // to two bytes with the -fshort-wchar compiler argument.
-            #define EA_WCHAR_SIZE 2
-        #endif
-    #endif
+#    define EA_WCHAR_SIZE 2
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -589,29 +628,29 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // Example usage:
     //    void DoSomething(char* EA_RESTRICT p1, char* EA_RESTRICT p2);
     //
-    #ifndef EA_RESTRICT
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // If VC8 (VS2005) or later...
-            #define EA_RESTRICT __restrict
-        #elif defined(EA_COMPILER_GNUC)
-            #define EA_RESTRICT __restrict // GCC defines 'restrict' (as opposed to __restrict) in C99 mode only.
-        #elif defined(__ARMCC_VERSION)
-            #define EA_RESTRICT __restrict
-        #elif defined(__MWERKS__)
-            #if __option(c99)
-                #define EA_RESTRICT restrict
-            #else
-                #define EA_RESTRICT
-            #endif
-        #elif defined(EA_COMPILER_IS_C99)
-            #define EA_RESTRICT restrict
-        #else
+#ifndef EA_RESTRICT
+#  if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // If VC8 (VS2005) or later...
+#    define EA_RESTRICT __restrict
+#  elif defined(EA_COMPILER_GNUC)
+#    define EA_RESTRICT __restrict // GCC defines 'restrict' (as opposed to __restrict) in C99 mode only.
+#  elif defined(__ARMCC_VERSION)
+#    define EA_RESTRICT __restrict
+#  elif defined(__MWERKS__)
+#    if __option(c99)
+#      define EA_RESTRICT restrict
+#    else
+#      define EA_RESTRICT
+#    endif
+#  elif defined(EA_COMPILER_IS_C99)
+#    define EA_RESTRICT restrict
+#  else
             // If the compiler didn't support restricted pointers, defining EA_RESTRICT 
             // away would result in compiling and running fine but you just wouldn't 
             // the same level of optimization. On the other hand, all the major compilers 
             // support restricted pointers.
-            #define EA_RESTRICT
-        #endif
-    #endif
+#    define EA_RESTRICT
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -625,28 +664,28 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // or for maximum portability:
     //    EA_PREFIX_DEPRECATED void Function() EA_POSTFIX_DEPRECATED;
     //
-    #ifndef EA_DEPRECATED
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION > 1300) // If VC7 (VS2003) or later...
-            #define EA_DEPRECATED __declspec(deprecated)
-        #elif defined(EA_COMPILER_MSVC)
-            #define EA_DEPRECATED 
-        #else
-            #define EA_DEPRECATED __attribute__((deprecated))
-        #endif
-    #endif
+#ifndef EA_DEPRECATED
+#  if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION > 1300) // If VC7 (VS2003) or later...
+#    define EA_DEPRECATED __declspec(deprecated)
+#  elif defined(EA_COMPILER_MSVC)
+#    define EA_DEPRECATED 
+#  else
+#    define EA_DEPRECATED __attribute__((deprecated))
+#  endif
+#endif
 
-    #ifndef EA_PREFIX_DEPRECATED
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION > 1300) // If VC7 (VS2003) or later...
-            #define EA_PREFIX_DEPRECATED __declspec(deprecated)
-            #define EA_POSTFIX_DEPRECATED
-        #elif defined(EA_COMPILER_MSVC)
-            #define EA_PREFIX_DEPRECATED
-            #define EA_POSTFIX_DEPRECATED
-        #else
-            #define EA_PREFIX_DEPRECATED
-            #define EA_POSTFIX_DEPRECATED __attribute__((deprecated))
-        #endif
-    #endif
+#ifndef EA_PREFIX_DEPRECATED
+#  if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION > 1300) // If VC7 (VS2003) or later...
+#    define EA_PREFIX_DEPRECATED __declspec(deprecated)
+#    define EA_POSTFIX_DEPRECATED
+#  elif defined(EA_COMPILER_MSVC)
+#    define EA_PREFIX_DEPRECATED
+#    define EA_POSTFIX_DEPRECATED
+#  else
+#    define EA_PREFIX_DEPRECATED
+#    define EA_POSTFIX_DEPRECATED __attribute__((deprecated))
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -669,34 +708,34 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //
     // The CodeWarrior compiler doesn't have the concept of forcing inlining per function.
     // 
-    #ifndef EA_FORCE_INLINE
-        #if defined(EA_COMPILER_MSVC)
-            #define EA_FORCE_INLINE __forceinline
-        #elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
-            #if defined(__cplusplus)
-                #define EA_FORCE_INLINE inline __attribute__((always_inline))
-            #else
-                #define EA_FORCE_INLINE __inline__ __attribute__((always_inline))
-            #endif
-        #else
-            #if defined(__cplusplus)
-                #define EA_FORCE_INLINE inline
-            #else
-                #define EA_FORCE_INLINE __inline
-            #endif
-        #endif
-    #endif
+#ifndef EA_FORCE_INLINE
+#  if defined(EA_COMPILER_MSVC)
+#    define EA_FORCE_INLINE __forceinline
+#  elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
+#    if defined(__cplusplus)
+#      define EA_FORCE_INLINE inline __attribute__((always_inline))
+#    else
+#      define EA_FORCE_INLINE __inline__ __attribute__((always_inline))
+#    endif
+#  else
+#    if defined(__cplusplus)
+#      define EA_FORCE_INLINE inline
+#    else
+#      define EA_FORCE_INLINE __inline
+#    endif
+#  endif
+#endif
 
-    #if defined(EA_COMPILER_SN) && defined(EA_PLATFORM_PS3) // SN's implementation of always_inline is broken and sometimes fails to link the function.
-        #define EA_PREFIX_FORCE_INLINE  inline
-        #define EA_POSTFIX_FORCE_INLINE 
-    #elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
-        #define EA_PREFIX_FORCE_INLINE  inline
-        #define EA_POSTFIX_FORCE_INLINE __attribute__((always_inline))
-    #else
-        #define EA_PREFIX_FORCE_INLINE  inline
-        #define EA_POSTFIX_FORCE_INLINE 
-    #endif
+#if defined(EA_COMPILER_SN) && defined(EA_PLATFORM_PS3) // SN's implementation of always_inline is broken and sometimes fails to link the function.
+#  define EA_PREFIX_FORCE_INLINE  inline
+#  define EA_POSTFIX_FORCE_INLINE 
+#elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
+#  define EA_PREFIX_FORCE_INLINE  inline
+#  define EA_POSTFIX_FORCE_INLINE __attribute__((always_inline))
+#else
+#  define EA_PREFIX_FORCE_INLINE  inline
+#  define EA_POSTFIX_FORCE_INLINE 
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -721,26 +760,26 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // #ifdefs in the code or to disable inlining for a given module and enable 
     // functions individually with EA_FORCE_INLINE. 
     // 
-    #ifndef EA_NO_INLINE
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // If VC8 (VS2005) or later...
-            #define EA_NO_INLINE __declspec(noinline)
-        #elif defined(EA_COMPILER_MSVC)
-            #define EA_NO_INLINE
-        #else
-            #define EA_NO_INLINE __attribute__((noinline))
-        #endif
-    #endif
+#ifndef EA_NO_INLINE
+#  if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // If VC8 (VS2005) or later...
+#    define EA_NO_INLINE __declspec(noinline)
+#  elif defined(EA_COMPILER_MSVC)
+#    define EA_NO_INLINE
+#  else
+#    define EA_NO_INLINE __attribute__((noinline))
+#  endif
+#endif
 
-    #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // If VC8 (VS2005) or later...
-        #define EA_PREFIX_NO_INLINE  __declspec(noinline)
-        #define EA_POSTFIX_NO_INLINE
-    #elif defined(EA_COMPILER_MSVC)
-        #define EA_PREFIX_NO_INLINE
-        #define EA_POSTFIX_NO_INLINE
-    #else
-        #define EA_PREFIX_NO_INLINE
-        #define EA_POSTFIX_NO_INLINE __attribute__((noinline))
-    #endif
+#if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // If VC8 (VS2005) or later...
+#  define EA_PREFIX_NO_INLINE  __declspec(noinline)
+#  define EA_POSTFIX_NO_INLINE
+#elif defined(EA_COMPILER_MSVC)
+#  define EA_PREFIX_NO_INLINE
+#  define EA_POSTFIX_NO_INLINE
+#else
+#  define EA_PREFIX_NO_INLINE
+#  define EA_POSTFIX_NO_INLINE __attribute__((noinline))
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -755,15 +794,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //        virtual void InterfaceFunction();
     //     };
     //
-    #ifdef EA_COMPILER_MSVC
-        #define EA_NO_VTABLE           __declspec(novtable)
-        #define EA_CLASS_NO_VTABLE(x)  class __declspec(novtable) x
-        #define EA_STRUCT_NO_VTABLE(x) struct __declspec(novtable) x
-    #else
-        #define EA_NO_VTABLE
-        #define EA_CLASS_NO_VTABLE(x)  class x
-        #define EA_STRUCT_NO_VTABLE(x) struct x
-    #endif
+#ifdef EA_COMPILER_MSVC
+#  define EA_NO_VTABLE           __declspec(novtable)
+#  define EA_CLASS_NO_VTABLE(x)  class __declspec(novtable) x
+#  define EA_STRUCT_NO_VTABLE(x) struct __declspec(novtable) x
+#else
+#  define EA_NO_VTABLE
+#  define EA_CLASS_NO_VTABLE(x)  class x
+#  define EA_STRUCT_NO_VTABLE(x) struct x
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -782,35 +821,35 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //       void EA_PASCAL_FUNC(DoNothing(int x));
     //       void EA_PASCAL_FUNC(DoNothing(int x)){}
     // 
-    #ifndef EA_PASCAL
-        #if defined(EA_COMPILER_MSVC)
-            #define EA_PASCAL __stdcall
-        #elif defined(EA_COMPILER_GNUC) && defined(EA_PROCESSOR_X86)
-            #define EA_PASCAL __attribute__((stdcall))
-        #elif defined(EA_COMPILER_METROWERKS) && defined(EA_PLATFORM_WINDOWS)
+#ifndef EA_PASCAL
+#  if defined(EA_COMPILER_MSVC)
+#    define EA_PASCAL __stdcall
+#  elif defined(EA_COMPILER_GNUC) && defined(EA_PROCESSOR_X86)
+#    define EA_PASCAL __attribute__((stdcall))
+#  elif defined(EA_COMPILER_METROWERKS) && defined(EA_PLATFORM_WINDOWS)
             // You need to make sure you have the Metrowerks "ANSI keywords only' 
             // compilation option disabled for the pascal keyword to work.
-            #define EA_PASCAL   pascal
-        #else
+#    define EA_PASCAL   pascal
+#  else
             // Some compilers simply don't support pascal calling convention.
             // As a result, there isn't an issue here, since the specification of 
             // pascal calling convention is for the purpose of disambiguating the
             // calling convention that is applied.
-            #define EA_PASCAL
-        #endif
-    #endif
+#    define EA_PASCAL
+#  endif
+#endif
 
-    #ifndef EA_PASCAL_FUNC
-        #if defined(EA_COMPILER_MSVC)
-            #define EA_PASCAL_FUNC(funcname_and_paramlist)    __stdcall funcname_and_paramlist
-        #elif defined(EA_COMPILER_GNUC) && defined(EA_PROCESSOR_X86)
-            #define EA_PASCAL_FUNC(funcname_and_paramlist)    __attribute__((stdcall)) funcname_and_paramlist
-        #elif defined(EA_COMPILER_METROWERKS) && defined(EA_PLATFORM_WINDOWS)
-            #define EA_PASCAL_FUNC(funcname_and_paramlist)    pascal funcname_and_paramlist
-        #else
-            #define EA_PASCAL_FUNC(funcname_and_paramlist)    funcname_and_paramlist
-        #endif
-    #endif
+#ifndef EA_PASCAL_FUNC
+#  if defined(EA_COMPILER_MSVC)
+#    define EA_PASCAL_FUNC(funcname_and_paramlist)    __stdcall funcname_and_paramlist
+#  elif defined(EA_COMPILER_GNUC) && defined(EA_PROCESSOR_X86)
+#    define EA_PASCAL_FUNC(funcname_and_paramlist)    __attribute__((stdcall)) funcname_and_paramlist
+#  elif defined(EA_COMPILER_METROWERKS) && defined(EA_PLATFORM_WINDOWS)
+#    define EA_PASCAL_FUNC(funcname_and_paramlist)    pascal funcname_and_paramlist
+#  else
+#    define EA_PASCAL_FUNC(funcname_and_paramlist)    funcname_and_paramlist
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -818,36 +857,36 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // Visual C Processor Packs define _MSC_FULL_VER and are needed for SSE
     // Intel C also has SSE support.
     // EA_SSE is used to select FPU or SSE versions in hw_select.inl
-    #ifndef EA_SSE
-        #if defined(EA_COMPILER_GNUC)
-            #if defined(__SSE2__)
-                #define EA_SSE 2
-            #elif defined(__SSE__) && __SSE__
-                #define EA_SSE 1
-            #else
-                #define EA_SSE 0
-            #endif
-        #elif defined(EA_PROCESSOR_X86) && defined(_MSC_FULL_VER) && !defined(__NOSSE__) && defined(_M_IX86_FP)
-            #define EA_SSE _M_IX86_FP 
-        #elif defined(EA_PROCESSOR_X86) && defined(EA_COMPILER_INTEL) && !defined(__NOSSE__)
-            #define EA_SSE 1
-        #else
-            #define EA_SSE 0
-        #endif
-    #endif
+#ifndef EA_SSE
+#  if defined(EA_COMPILER_GNUC)
+#    if defined(__SSE2__)
+#      define EA_SSE 2
+#    elif defined(__SSE__) && __SSE__
+#      define EA_SSE 1
+#    else
+#      define EA_SSE 0
+#    endif
+#  elif defined(EA_PROCESSOR_X86) && defined(_MSC_FULL_VER) && !defined(__NOSSE__) && defined(_M_IX86_FP)
+#    define EA_SSE _M_IX86_FP 
+#  elif defined(EA_PROCESSOR_X86) && defined(EA_COMPILER_INTEL) && !defined(__NOSSE__)
+#    define EA_SSE 1
+#  else
+#    define EA_SSE 0
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
     // EA_IMPORT
     // import declaration specification
     // specifies that the declared symbol is imported from another dynamic library.
-    #ifndef EA_IMPORT
-        #if defined(EA_COMPILER_MSVC)
-            #define EA_IMPORT __declspec(dllimport)
-        #else
-            #define EA_IMPORT
-        #endif
-    #endif
+#ifndef EA_IMPORT
+#  if defined(EA_COMPILER_MSVC)
+#    define EA_IMPORT __declspec(dllimport)
+#  else
+#    define EA_IMPORT
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -855,13 +894,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // export declaration specification
     // specifies that the declared symbol is exported from the current dynamic library.
     // this is not the same as the C++ export keyword.
-    #ifndef EA_EXPORT
-        #if defined(EA_COMPILER_MSVC)
-            #define EA_EXPORT __declspec(dllexport)
-        #else
-            #define EA_EXPORT
-        #endif
-    #endif
+#ifndef EA_EXPORT
+#  if defined(EA_COMPILER_MSVC)
+#    define EA_EXPORT __declspec(dllexport)
+#  else
+#    define EA_EXPORT
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -889,9 +928,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //
     //    #endif
     //
-    #if defined(_MSC_VER) || defined(__MWERKS__) || defined(__GNUC__) || defined(__SNC__) || defined(__ICC) || defined(__ICL)
-        #define EA_PRAGMA_ONCE_SUPPORTED 1
-    #endif
+#if defined(_MSC_VER) || defined(__MWERKS__) || defined(__GNUC__) || defined(__SNC__) || defined(__ICC) || defined(__ICL)
+#  define EA_PRAGMA_ONCE_SUPPORTED 1
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -899,13 +938,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // 
     //  See http://msdn.microsoft.com/en-us/library/41w3sh1c.aspx for more information.
     // 
-    #ifndef EA_OVERRIDE
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // VS2005 (VC8) and later
-            #define EA_OVERRIDE override
-        #else
-            #define EA_OVERRIDE 
-        #endif
-    #endif
+#ifndef EA_OVERRIDE
+#  if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // VS2005 (VC8) and later
+#    define EA_OVERRIDE override
+#  else
+#    define EA_OVERRIDE 
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -913,13 +952,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // 
     // See http://msdn.microsoft.com/en-us/library/49k3w2fx%28VS.71%29.aspx for more information.
     // 
-    #ifndef EA_SEALED
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // VS2005 (VC8) and later
-            #define EA_SEALED sealed
-        #else
-            #define EA_SEALED 
-        #endif
-    #endif
+#ifndef EA_SEALED
+#  if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // VS2005 (VC8) and later
+#    define EA_SEALED sealed
+#  else
+#    define EA_SEALED 
+#  endif
+#endif
 
 
     // ------------------------------------------------------------------------
@@ -927,23 +966,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // 
     // See http://msdn.microsoft.com/en-us/library/49k3w2fx%28VS.71%29.aspx for more information.
     // 
-    #ifndef EA_ABSTRACT
-        #if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // VS2005 (VC8) and later
-            #define EA_ABSTRACT abstract
-        #else
-            #define EA_ABSTRACT 
-        #endif
-    #endif
+#ifndef EA_ABSTRACT
+#  if defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1400) // VS2005 (VC8) and later
+#    define EA_ABSTRACT abstract
+#  else
+#    define EA_ABSTRACT 
+#  endif
+#endif
 
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
-
-
