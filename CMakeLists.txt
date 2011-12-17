@@ -1,21 +1,38 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+cmake_minimum_required(VERSION 2.6)
 
-PROJECT("EASTL" CXX)
+project("EASTL" CXX)
 
-SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
-SET(EASTL_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/EASTL.cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake_module)
 
-ADD_DEFINITIONS(${EASTL_DEFINITIONS})
-INCLUDE_DIRECTORIES(${EASTL_INCLUDE_DIR})
-AUX_SOURCE_DIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/src SRCS)
-ADD_LIBRARY(${PROJECT_NAME} STATIC ${SRCS})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+link_directories(${LIBRARY_OUTPUT_PATH})
+
+set(EASTL_SKIP_LIBRARY_FINDING TRUE)
+find_package(EASTL REQUIRED)
+set(EASTL_LIBRARY EASTL)
+
+add_definitions(${EASTL_DEFINITIONS})
+include_directories(${EASTL_INCLUDE_DIR})
+
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src LIB_SRCS)
+add_library(${PROJECT_NAME} STATIC ${LIB_SRCS})
 
 enable_testing()
+
 add_executable(example ${CMAKE_CURRENT_SOURCE_DIR}/contrib/example/example.cpp)
-link_directories(${EASTL_LIBRARY_DIR})
 target_link_libraries(example ${EASTL_LIBRARY})
 add_test(example ${EXECUTABLE_OUTPUT_PATH}/example)
 add_dependencies(example EASTL)
+
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/test TEST_SRCS)
+foreach(i ${TEST_SRCS})
+  get_filename_component(name ${i} NAME_WE)
+  set(name "test_${name}")
+  add_executable(${name} ${i})
+  target_link_libraries(${name} ${EASTL_LIBRARY})
+  add_test(${name} ${EXECUTABLE_OUTPUT_PATH}/example)
+  add_dependencies(${name} EASTL)
+endforeach()
