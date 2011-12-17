@@ -239,7 +239,7 @@ namespace eastl
         vector(size_type n, const value_type& value, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
         vector(const this_type& x);
 
-#ifdef EA_COMPILER_IS_MOVABLE
+#ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
         vector(this_type&& x);
 #endif
 
@@ -520,7 +520,7 @@ namespace eastl
         DoInit(first, last, is_integral<InputIterator>());
     }
 
-#ifdef EA_COMPILER_IS_MOVABLE
+#ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
     template <typename T, typename Allocator>
     vector<T, Allocator>::vector(this_type&& x)
            : base_type()
