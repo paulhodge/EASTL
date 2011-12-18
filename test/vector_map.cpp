@@ -2,8 +2,6 @@
 
 #include "test.hpp"
 
-#include <boost/preprocessor/seq/for_each.hpp>
-
 #include <cassert>
 #include <iostream>
 
@@ -423,17 +421,17 @@ static void upper_lower_bound() {
 static void equal_range() {
   eastl::vector_map<char, int> mymap;
   eastl::pair<eastl::vector_map<char, int>::iterator,
-            eastl::vector_map<char, int>::iterator> ret;
+      eastl::vector_map<char, int>::iterator> ret;
 
   mymap['a']=10;
   mymap['b']=20;
   mymap['c']=30;
-  
+
   ret = mymap.equal_range('b');
-  
+
   assert(ret.first->first == 'b');
   assert(ret.first->second == 20);
-  
+
   assert(ret.second->first == 'c');
   assert(ret.second->second == 30);
 }
@@ -453,30 +451,23 @@ static void get_allocator() {
 }
 
 int main() {
-
-#define func(r, data, elem) elem();
-  BOOST_PP_SEQ_FOR_EACH(func, ,
-                        (constructor)
-                        (assign_operator)
-                        (begin_end)
-                        (rbegin_rend)
-                        (empty)
-                        (size)
-                        (max_size)
-                        (index_operator)
-                        (insert)
-                        (erase)
-                        (swap)
-                        (clear)
-                        (key_comp)
-                        (value_comp)
-                        (find)
-                        (count)
-                        (upper_lower_bound)
-                        (equal_range)
-                        (get_allocator)
-                        )
-#undef func
-
-#undef map_tests
-      }
+  constructor();
+  assign_operator();
+  begin_end();
+  rbegin_rend();
+  empty();
+  size();
+  max_size();
+  index_operator();
+  insert();
+  erase();
+  swap();
+  clear();
+  key_comp();
+  value_comp();
+  find();
+  count();
+  upper_lower_bound();
+  equal_range();
+  get_allocator();
+}
