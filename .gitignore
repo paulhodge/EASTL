@@ -1,5 +1,4 @@
 *.o
-libEASTL.a
 
 # msvs
 *.suo
@@ -8,3 +7,7 @@ libEASTL.a
 *.ipch
 bin/*
 tmp/*
+
+*~
+*.a
+*.exe

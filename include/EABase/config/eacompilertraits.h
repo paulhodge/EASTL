@@ -301,6 +301,32 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
 #  define EA_PACKED __attribute__((packed))
 
+#elif defined(EA_COMPILER_CLANG)
+        // Checks for clang-supported attributes
+#  if __has_attribute(aligned)
+#    define CLANG_ALIGNED(n) __attribute__((aligned(n)))
+#  else
+#    define CLANG_ALIGNED(n)
+#  endif
+
+#  if __has_attribute(packed)
+#    define CLANG_PACKED __attribute__((packed))
+#  else
+#    define CLANG_PACKED
+#  endif
+
+        // Now we define the alignment stuff
+#  define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
+#  define EA_ALIGN(n) CLANG_ALIGNED(n)
+#  define EA_PREFIX_ALIGN(n)
+#  define EA_POSTFIX_ALIGN(n) CLANG_ALIGNED(n)
+#  define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
+#  define EA_PACKED CLANG_PACKED
+
+        // Make sure we get no macro naming conflicts
+#  undef CLANG_ALIGNED 
+#  undef CLANG_PACKED 
+
     // Metrowerks supports prefix attributes.
     // Metrowerks does not support packed alignment attributes.
 #elif defined(EA_COMPILER_METROWERKS)
@@ -383,7 +409,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //       { ... }
     //
 #ifndef EA_LIKELY
-#  if (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__MWERKS__) // Metrowerks supports __builtin_expect, but with some platforms (e.g. Wii) it appears to ignore it.
+#  if (defined(__GNUC__) && (__GNUC__ >= 3))                  || \
+            (defined(__clang__) && __has_builtin(__builtin_expect)) || \
+             defined(__MWERKS__) // Metrowerks supports __builtin_expect, but with some platforms (e.g. Wii) it appears to ignore it.
+
 #    if defined(__cplusplus)
 #      define EA_LIKELY(x)   __builtin_expect(!!(x), true)
 #      define EA_UNLIKELY(x) __builtin_expect(!!(x), false) 
@@ -433,6 +462,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //    pvoid_may_alias gPtr = NULL;
     //
 #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 303)
+#  define EA_MAY_ALIAS __attribute__((__may_alias__))
+#elif defined(EA_COMPILER_CLANG) && __has_attribute(__may_alias__)
 #  define EA_MAY_ALIAS __attribute__((__may_alias__))
 #else
 #  define EA_MAY_ALIAS
@@ -490,6 +521,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //
 #ifndef EA_PURE
 #  if defined(EA_COMPILER_GNUC)
+#    define EA_PURE __attribute__((pure))
+#  elif defined(EA_COMPILER_CLANG) && __has_attribute(pure)
 #    define EA_PURE __attribute__((pure))
 #  elif defined(__ARMCC_VERSION)  // Arm brand compiler for ARM CPU
 #    define EA_PURE __pure
@@ -638,6 +671,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #    define EA_RESTRICT __restrict
 #  elif defined(EA_COMPILER_GNUC)
 #    define EA_RESTRICT __restrict // GCC defines 'restrict' (as opposed to __restrict) in C99 mode only.
+#  elif defined(EA_COMPILER_CLANG)
+#    define EA_RESTRICT __restrict
 #  elif defined(__ARMCC_VERSION)
 #    define EA_RESTRICT __restrict
 #  elif defined(__MWERKS__)
@@ -717,6 +752,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  if defined(EA_COMPILER_MSVC)
 #    define EA_FORCE_INLINE __forceinline
 #  elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
+#    if defined(__cplusplus)
+#      define EA_FORCE_INLINE inline __attribute__((always_inline))
+#    else
+#      define EA_FORCE_INLINE __inline__ __attribute__((always_inline))
+#    endif
+#  elif defined(EA_COMPILER_CLANG) && __has_attribute(always_inline)
 #    if defined(__cplusplus)
 #      define EA_FORCE_INLINE inline __attribute__((always_inline))
 #    else
@@ -863,7 +904,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // Intel C also has SSE support.
     // EA_SSE is used to select FPU or SSE versions in hw_select.inl
 #ifndef EA_SSE
-#  if defined(EA_COMPILER_GNUC)
+#  if defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_CLANG)
 #    if defined(__SSE2__)
 #      define EA_SSE 2
 #    elif defined(__SSE__) && __SSE__
@@ -933,7 +974,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //
     //    #endif
     //
-#if defined(_MSC_VER) || defined(__MWERKS__) || defined(__GNUC__) || defined(__SNC__) || defined(__ICC) || defined(__ICL)
+#if defined(_MSC_VER) || defined(__MWERKS__) || defined(__GNUC__) || defined(__SNC__) || defined(__ICC) || defined(__ICL) || defined(__clang__)
 #  define EA_PRAGMA_ONCE_SUPPORTED 1
 #endif
 

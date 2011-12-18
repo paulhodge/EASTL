@@ -32,9 +32,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Copyright (c) 2002 - 2005 Electronic Arts Inc. All rights reserved.
  * Maintained by Paul Pedriana, Maxis
  *
+ * Modified to support Clang++ (v2.8) by Austin Seipp, 2010.
+ *
  *-----------------------------------------------------------------------------
  * Currently supported defines include:
  *     EA_COMPILER_GNUC
+ *     EA_COMPILER_CLANG
  *     EA_COMPILER_ARM
  *     EA_COMPILER_EDG
  *     EA_COMPILER_SN
@@ -166,6 +169,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define INTERNAL_PRIMITIVE_STRINGIZE(x) #x
     #endif
 
+    // Note: this is for compatibility with non-clang compilers
+    #ifndef __has_feature
+        #define __has_feature(x) 0
+    #endif
+
+    // Note: this is for compatibility with non-clang compilers
+    #ifndef __has_builtin
+        #define __has_builtin(x) 0
+    #endif
 
     // EDG (EDG compiler front-end, used by other compilers such as SN)
     #if defined(__EDG_VERSION__)
@@ -225,6 +237,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #if (__GNUC__ == 3) && ((__GNUC_MINOR__ == 1) || (__GNUC_MINOR__ == 2)) // If GCC 3.1 or 3.2 (but not pre 3.1 or post 3.2)...
             #define EA_COMPILER_NO_EXPLICIT_FUNCTION_TEMPLATE_ARGUMENTS
         #endif
+
+    // Clang (quite compatible with GCC)
+    #elif defined(__clang__)
+        #define EA_COMPILER_CLANG
+        #define EA_COMPILER_VERSION (__clang_major__ * 1000 + __clang_minor__)
+        #define EA_COMPILER_NAME "Clang++"
+        #define EA_COMPILER_STRING EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE( __clang_version__ )
 
     // Borland C++
     #elif defined(__BORLANDC__)
@@ -390,6 +409,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define EA_COMPILER_NO_RTTI
     #elif defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
         #define EA_COMPILER_NO_RTTI
+    #elif defined(__clang__) && !__has_feature(cxx_rtti)
+        #define EA_COMPILER_NO_RTTI
     #elif defined(_MSC_VER) && !defined(_CPPRTTI)
         #define EA_COMPILER_NO_RTTI
     #elif defined(__MWERKS__)
@@ -418,6 +439,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define EA_COMPILER_NO_EXCEPTIONS
 
     #elif (defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_INTEL) || defined(EA_COMPILER_SN)) && !defined(__EXCEPTIONS) // GCC and most EDG-based compilers define __EXCEPTIONS when exception handling is enabled.
+        #define EA_COMPILER_NO_EXCEPTIONS
+
+    #elif defined(EA_COMPILER_CLANG) && !__has_feature(cxx_exceptions)
         #define EA_COMPILER_NO_EXCEPTIONS
 
     #elif defined(EA_COMPILER_METROWERKS)
@@ -474,14 +498,3 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #endif // INCLUDED_eacompiler_H
-
-
-
-
-
-
-
-
-
-
-
