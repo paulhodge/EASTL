@@ -38,9 +38,11 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/test TEST_SRCS)
 foreach(i ${TEST_SRCS})
   get_filename_component(name ${i} NAME_WE)
   set(name "test_${name}")
+
   add_executable(${name} ${i})
   target_link_libraries(${name} ${EASTL_LIBRARY})
-  add_test(${name} ${EXECUTABLE_OUTPUT_PATH}/example)
+  add_test(${name} ${EXECUTABLE_OUTPUT_PATH}/${name})
+
   add_dependencies(${name} EASTL)
 endforeach()
 
