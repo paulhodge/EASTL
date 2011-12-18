@@ -176,11 +176,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #    define EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
 #    define EA_COMPILER_HAS_MOVE_SEMANTICS
 #  endif
-#  if (__GNUC__ >= 4)
-#    if (__GNUC_MINOR__ >= 4)
-#      ifdef EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
-#        define EA_COMPILER_HAS_CHAR_16_32
-#      endif
+
+#  define EASTL_GNU_VERSION_NUM (__GNUC__ * 100) + __GNUC_MINOR__
+#  ifdef EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+#    if EASTL_GNU_VERSION_NUM >= 404
+#      define EA_COMPILER_HAS_CHAR_16_32
+#      define EA_COMPILER_HAS_VARIADIC_TEMPLATES
 #    endif
 #  endif
 #endif
@@ -190,14 +191,18 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #    define EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
 #    define EA_COMPILER_HAS_MOVE_SEMANTICS
 #  endif
-#  if (__clang_major__ >= 2)
-#    if (__clang_minor__ >= 9)
-#      define EA_COMPILER_HAS_C99_TYPES
-#      ifdef EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
-#        define EA_COMPILER_HAS_CHAR_16_32
-#      endif
+
+#  define EASTL_CLANG_VERSION_NUM (__clang_major__ * 10) + __clang_minor__
+#  if EASTL_CLANG_VERSION_NUM >= 29
+#    define EA_COMPILER_HAS_C99_TYPES
+#  endif
+#  ifdef EA_COMPILER_IS_CPLUSPLUS_11_ENABLED
+#    if EASTL_CLANG_VERSION_NUM >= 29
+#      define EA_COMPILER_HAS_CHAR_16_32
+#      define EA_COMPILER_HAS_VARIADIC_TEMPLATES
 #    endif
 #  endif
+
 #  ifndef __STDC_LIMIT_MACROS
 #    define __STDC_LIMIT_MACROS
 #  endif
