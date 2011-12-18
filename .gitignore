@@ -1,2 +1,10 @@
 *.o
 libEASTL.a
+
+# msvs
+*.suo
+*.sdf
+*.opensdf
+*.ipch
+bin/*
+tmp/*
