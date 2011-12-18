@@ -241,6 +241,17 @@ namespace eastl
 
 #ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
         vector(this_type&& x);
+        this_type& operator =(this_type&& x);
+        iterator insert(iterator position, value_type&& value);
+        void push_back(value_type&& x);
+#  ifdef EA_COMPILER_HAS_VARIADIC_TEMPLATES
+        /*
+        template<class ... Args>
+        iterator emplace(const_iterator pos, Args&& ... args);
+        template<class ... Args>
+        iterator emplace_back(const_iterator pos, Args&& ... args);
+        */
+#  endif
 #endif
 
         template <typename InputIterator>
@@ -258,7 +269,7 @@ namespace eastl
 
         iterator       begin();
         const_iterator begin() const;
-
+        
         iterator       end();
         const_iterator end() const;
 
@@ -522,11 +533,42 @@ namespace eastl
 
 #ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
     template <typename T, typename Allocator>
-    vector<T, Allocator>::vector(this_type&& x)
+    inline vector<T, Allocator>::vector(vector<T, Allocator>&& x)
            : base_type()
     {
       swap(x);
     }
+
+    template <typename T, typename Allocator>
+        inline vector<T, Allocator>& vector<T, Allocator>::operator =(vector<T, Allocator>&& x) {
+      this->~VectorBase();
+      swap(x);
+    }
+
+    template <typename T, typename Allocator>
+    inline typename vector<T, Allocator>::iterator vector<T, Allocator>::insert(
+        typename vector<T, Allocator>::iterator const pos, T&& x)
+    {
+      iterator const ret = insert(pos, value_type());
+      *ret = x;
+      return ret;
+    }
+
+    template <typename T, typename Allocator>
+    inline void vector<T, Allocator>::push_back(T&& x) {
+      push_back() = x;
+    }
+#  ifdef EA_COMPILER_HAS_VARIADIC_TEMPLATES
+    /*
+    template <typename T, typename Allocator>
+    template<class ... Args>
+    typename vector<T, Allocator>::iterator vector<T, Allocator>::emplace(const_iterator pos, Args&& ... args);
+
+    template <typename T, typename Allocator>
+    template<class ... Args>
+    typename vector<T, Allocator>::iterator vector<T, Allocator>::emplace_back(const_iterator pos, Args&& ... args);
+    */
+#  endif
 #endif
 
     template <typename T, typename Allocator>
