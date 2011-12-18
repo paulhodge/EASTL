@@ -157,36 +157,41 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INCLUDED_eacompiler_H
 #define INCLUDED_eacompiler_H
 
-    #ifndef INCLUDED_eaplatform_H
-        #include "EABase/config/eaplatform.h"
-    #endif
+#ifndef INCLUDED_eaplatform_H
+#  include "EABase/config/eaplatform.h"
+#endif
 
     // Note: This is used to generate the EA_COMPILER_STRING macros
-    #ifndef INTERNAL_STRINGIZE
-        #define INTERNAL_STRINGIZE(x) INTERNAL_PRIMITIVE_STRINGIZE(x)
-    #endif
-    #ifndef INTERNAL_PRIMITIVE_STRINGIZE
-        #define INTERNAL_PRIMITIVE_STRINGIZE(x) #x
-    #endif
+#ifndef INTERNAL_STRINGIZE
+#  define INTERNAL_STRINGIZE(x) INTERNAL_PRIMITIVE_STRINGIZE(x)
+#endif
+#ifndef INTERNAL_PRIMITIVE_STRINGIZE
+#  define INTERNAL_PRIMITIVE_STRINGIZE(x) #x
+#endif
 
     // Note: this is for compatibility with non-clang compilers
-    #ifndef __has_feature
-        #define __has_feature(x) 0
-    #endif
+#ifndef __has_feature
+#  define __has_feature(x) 0
+#endif
 
     // Note: this is for compatibility with non-clang compilers
-    #ifndef __has_builtin
-        #define __has_builtin(x) 0
-    #endif
+#ifndef __has_attribute
+#  define __has_attribute(x) 0
+#endif
+
+    // Note: this is for compatibility with non-clang compilers
+#ifndef __has_builtin
+#  define __has_builtin(x) 0
+#endif
 
     // EDG (EDG compiler front-end, used by other compilers such as SN)
-    #if defined(__EDG_VERSION__)
-        #define EA_COMPILER_EDG
-    #endif
+#if defined(__EDG_VERSION__)
+#  define EA_COMPILER_EDG
+#endif
 
 
     // SN
-    #if defined(__SNC__) // SN Systems compiler 
+#if defined(__SNC__) // SN Systems compiler 
         // Note that there are two versions of the SN compiler, one that is 
         // GNUC-based and a newer one which is based on an EDG (Edison Design
         // Group) front-end with a back-end code generator made by SN.
@@ -198,77 +203,77 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         // may be defined at the same time. Note that while the newer EDG-based
         // SN compiler may emulate other compilers, it doesn't act exactly 
         // the same.
-        #define EA_COMPILER_SN
-    #endif
+#  define EA_COMPILER_SN
+#endif
 
 
     // Airplay SDK (third party mobile middleware compiler)
-    #if defined(__S3E__)
-        #define EA_COMPILER_NO_EXCEPTION_STD_NAMESPACE
-    #endif
+#if defined(__S3E__)
+#  define EA_COMPILER_NO_EXCEPTION_STD_NAMESPACE
+#endif
 
 
     // SNC (SN Systems)
-    #if defined(__SNC__)
-         #define EA_COMPILER_NAME "SNC"
+#if defined(__SNC__)
+#  define EA_COMPILER_NAME "SNC"
 
-        #ifdef __GNUC__ // If SN is using GCC-compatibility mode (which it usually is)...
-             #define EA_COMPILER_GNUC
-             #define EA_COMPILER_VERSION     (__GNUC__ * 1000 + __GNUC_MINOR__)  // We intentionally report the GCC version here. SN 
-             #define EA_COMPILER_STRING      EA_COMPILER_NAME " compiler, GCC version " INTERNAL_STRINGIZE( __GNUC__ ) "." INTERNAL_STRINGIZE( __GNUC_MINOR__ ) ", SNC version " INTERNAL_STRINGIZE( __SN_VER__ )  ", EDG version " INTERNAL_STRINGIZE( __EDG_VERSION__ )
-        #else
-             #define EA_COMPILER_VERSION     __SN_VER__
-             #define EA_COMPILER_STRING      EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE( EA_COMPILER_VERSION ) ", EDG version " INTERNAL_STRINGIZE( __EDG_VERSION__ )
-        #endif
+#  ifdef __GNUC__ // If SN is using GCC-compatibility mode (which it usually is)...
+#    define EA_COMPILER_GNUC
+#    define EA_COMPILER_VERSION     (__GNUC__ * 1000 + __GNUC_MINOR__)  // We intentionally report the GCC version here. SN 
+#    define EA_COMPILER_STRING      EA_COMPILER_NAME " compiler, GCC version " INTERNAL_STRINGIZE( __GNUC__ ) "." INTERNAL_STRINGIZE( __GNUC_MINOR__ ) ", SNC version " INTERNAL_STRINGIZE( __SN_VER__ )  ", EDG version " INTERNAL_STRINGIZE( __EDG_VERSION__ )
+#  else
+#    define EA_COMPILER_VERSION     __SN_VER__
+#    define EA_COMPILER_STRING      EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE( EA_COMPILER_VERSION ) ", EDG version " INTERNAL_STRINGIZE( __EDG_VERSION__ )
+#  endif
 
     // GCC (a.k.a. GNUC)
-    #elif defined(__GNUC__) // GCC compilers exist for many platforms.
-        #define EA_COMPILER_GNUC
-        #define EA_COMPILER_VERSION (__GNUC__ * 1000 + __GNUC_MINOR__)
-        #define EA_COMPILER_NAME "GCC"
-        #define EA_COMPILER_STRING EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE( __GNUC__ ) "." INTERNAL_STRINGIZE( __GNUC_MINOR__ )
+#elif defined(__GNUC__) // GCC compilers exist for many platforms.
+#  define EA_COMPILER_GNUC
+#  define EA_COMPILER_VERSION (__GNUC__ * 1000 + __GNUC_MINOR__)
+#  define EA_COMPILER_NAME "GCC"
+#  define EA_COMPILER_STRING EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE( __GNUC__ ) "." INTERNAL_STRINGIZE( __GNUC_MINOR__ )
 
-        #if (__GNUC__ == 2) && (__GNUC_MINOR__ < 95) // If GCC < 2.95... 
-            #define EA_COMPILER_NO_MEMBER_TEMPLATES
-        #endif
-        #if (__GNUC__ == 2) && (__GNUC_MINOR__ <= 97) // If GCC <= 2.97...
-            #define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS
-        #endif
-        #if (__GNUC__ == 3) && ((__GNUC_MINOR__ == 1) || (__GNUC_MINOR__ == 2)) // If GCC 3.1 or 3.2 (but not pre 3.1 or post 3.2)...
-            #define EA_COMPILER_NO_EXPLICIT_FUNCTION_TEMPLATE_ARGUMENTS
-        #endif
+#  if (__GNUC__ == 2) && (__GNUC_MINOR__ < 95) // If GCC < 2.95... 
+#    define EA_COMPILER_NO_MEMBER_TEMPLATES
+#  endif
+#  if (__GNUC__ == 2) && (__GNUC_MINOR__ <= 97) // If GCC <= 2.97...
+#    define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS
+#  endif
+#  if (__GNUC__ == 3) && ((__GNUC_MINOR__ == 1) || (__GNUC_MINOR__ == 2)) // If GCC 3.1 or 3.2 (but not pre 3.1 or post 3.2)...
+#    define EA_COMPILER_NO_EXPLICIT_FUNCTION_TEMPLATE_ARGUMENTS
+#  endif
 
     // Clang (quite compatible with GCC)
-    #elif defined(__clang__)
-        #define EA_COMPILER_CLANG
-        #define EA_COMPILER_VERSION (__clang_major__ * 1000 + __clang_minor__)
-        #define EA_COMPILER_NAME "Clang++"
-        #define EA_COMPILER_STRING EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE( __clang_version__ )
+#elif defined(__clang__)
+#  define EA_COMPILER_CLANG
+#  define EA_COMPILER_VERSION (__clang_major__ * 1000 + __clang_minor__)
+#  define EA_COMPILER_NAME "Clang++"
+#  define EA_COMPILER_STRING EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE( __clang_version__ )
 
     // Borland C++
-    #elif defined(__BORLANDC__)
-        #define EA_COMPILER_BORLANDC
-        #define EA_COMPILER_VERSION __BORLANDC__
-        #define EA_COMPILER_NAME "Borland C"
+#elif defined(__BORLANDC__)
+#  define EA_COMPILER_BORLANDC
+#  define EA_COMPILER_VERSION __BORLANDC__
+#  define EA_COMPILER_NAME "Borland C"
       //#define EA_COMPILER_STRING (defined below)
 
-        #if (__BORLANDC__ <= 0x0550)      // If Borland C++ Builder 4 and 5...
-            #define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS
-        #endif
-        #if (__BORLANDC__ >= 0x561) && (__BORLANDC__ < 0x600)
-            #define EA_COMPILER_NO_MEMBER_FUNCTION_SPECIALIZATION
-        #endif
+#  if (__BORLANDC__ <= 0x0550)      // If Borland C++ Builder 4 and 5...
+#    define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS
+#  endif
+#  if (__BORLANDC__ >= 0x561) && (__BORLANDC__ < 0x600)
+#    define EA_COMPILER_NO_MEMBER_FUNCTION_SPECIALIZATION
+#  endif
 
 
     // Intel C++ (via EDG front-end)
-    #elif defined(__ICL) || defined(__ICC)
-        #define EA_COMPILER_INTEL
-        #if defined(__ICL)
-            #define EA_COMPILER_VERSION __ICL
-        #elif defined(__ICC)
-            #define EA_COMPILER_VERSION __ICC
-        #endif
-        #define EA_COMPILER_NAME "Intel C++"
+#elif defined(__ICL) || defined(__ICC)
+#  define EA_COMPILER_INTEL
+#  if defined(__ICL)
+#    define EA_COMPILER_VERSION __ICL
+#  elif defined(__ICC)
+#    define EA_COMPILER_VERSION __ICC
+#  endif
+#  define EA_COMPILER_NAME "Intel C++"
       //#define EA_COMPILER_STRING (defined below)
 
         // Intel is based ont the EDG (Edison Design Group) front end and 
@@ -276,127 +281,127 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     // Metrowerks
-    #elif defined(__MWERKS__) || defined(__CWCC__) // Metrowerks compilers exist for many platforms.
-        #define EA_COMPILER_METROWERKS
-        #ifdef __MWERKS__
-            #define EA_COMPILER_VERSION __MWERKS__
-        #else
-            #define EA_COMPILER_VERSION __CWCC__
-        #endif
-        #define EA_COMPILER_NAME "Metrowerks"
+#elif defined(__MWERKS__) || defined(__CWCC__) // Metrowerks compilers exist for many platforms.
+#  define EA_COMPILER_METROWERKS
+#  ifdef __MWERKS__
+#    define EA_COMPILER_VERSION __MWERKS__
+#  else
+#    define EA_COMPILER_VERSION __CWCC__
+#  endif
+#  define EA_COMPILER_NAME "Metrowerks"
       //#define EA_COMPILER_STRING (defined below)
 
-        #if (__MWERKS__ <= 0x2407)  // If less than v7.x...
-            #define EA_COMPILER_NO_MEMBER_FUNCTION_SPECIALIZATION
-        #endif
-        #if (__MWERKS__ <= 0x3003)  // If less than v8.x...
-            #define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS
-        #endif
+#  if (__MWERKS__ <= 0x2407)  // If less than v7.x...
+#    define EA_COMPILER_NO_MEMBER_FUNCTION_SPECIALIZATION
+#  endif
+#  if (__MWERKS__ <= 0x3003)  // If less than v8.x...
+#    define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS
+#  endif
 
 
     // Microsoft VC++
-    #elif defined(_MSC_VER) && !(defined(__S3E__) && defined(__arm__)) // S3E is a mobile SDK which mistakenly masquerades as VC++ on ARM.
-        #define EA_COMPILER_MSVC
-        #define EA_COMPILER_VERSION _MSC_VER
-        #define EA_COMPILER_NAME "Microsoft Visual C++"
+#elif defined(_MSC_VER) && !(defined(__S3E__) && defined(__arm__)) // S3E is a mobile SDK which mistakenly masquerades as VC++ on ARM.
+#  define EA_COMPILER_MSVC
+#  define EA_COMPILER_VERSION _MSC_VER
+#  define EA_COMPILER_NAME "Microsoft Visual C++"
       //#define EA_COMPILER_STRING (defined below)
 
-        #if (_MSC_VER <= 1200) // If VC6.x and earlier...
-            #if (_MSC_VER < 1200)
-                #define EA_COMPILER_MSVCOLD
-            #else
-                #define EA_COMPILER_MSVC6
-            #endif
+#  if (_MSC_VER <= 1200) // If VC6.x and earlier...
+#    if (_MSC_VER < 1200)
+#      define EA_COMPILER_MSVCOLD
+#    else
+#      define EA_COMPILER_MSVC6
+#    endif
 
-            #if (_MSC_VER < 1200) // If VC5.x or earlier...
-                #define EA_COMPILER_NO_TEMPLATE_SPECIALIZATION
-            #endif
-            #define EA_COMPILER_NO_EXPLICIT_FUNCTION_TEMPLATE_ARGUMENTS     // The compiler compiles this OK, but executes it wrong. Fixed in VC7.0
-            #define EA_COMPILER_NO_VOID_RETURNS                             // The compiler fails to compile such cases. Fixed in VC7.0
-            #define EA_COMPILER_NO_EXCEPTION_STD_NAMESPACE                  // The compiler fails to compile such cases. Fixed in VC7.0
-            #define EA_COMPILER_NO_DEDUCED_TYPENAME                         // The compiler fails to compile such cases. Fixed in VC7.0
-            #define EA_COMPILER_NO_STATIC_CONSTANTS                         // The compiler fails to compile such cases. Fixed in VC7.0
-            #define EA_COMPILER_NO_COVARIANT_RETURN_TYPE                    // The compiler fails to compile such cases. Fixed in VC7.1
-            #define EA_COMPILER_NO_ARGUMENT_DEPENDENT_LOOKUP                // The compiler compiles this OK, but executes it wrong. Fixed in VC7.1
-            #define EA_COMPILER_NO_TEMPLATE_TEMPLATES                       // The compiler fails to compile such cases. Fixed in VC7.1
-            #define EA_COMPILER_NO_TEMPLATE_PARTIAL_SPECIALIZATION          // The compiler fails to compile such cases. Fixed in VC7.1
-            #define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS                  // The compiler fails to compile such cases. Fixed in VC7.1
+#    if (_MSC_VER < 1200) // If VC5.x or earlier...
+#      define EA_COMPILER_NO_TEMPLATE_SPECIALIZATION
+#    endif
+#    define EA_COMPILER_NO_EXPLICIT_FUNCTION_TEMPLATE_ARGUMENTS     // The compiler compiles this OK, but executes it wrong. Fixed in VC7.0
+#    define EA_COMPILER_NO_VOID_RETURNS                             // The compiler fails to compile such cases. Fixed in VC7.0
+#    define EA_COMPILER_NO_EXCEPTION_STD_NAMESPACE                  // The compiler fails to compile such cases. Fixed in VC7.0
+#    define EA_COMPILER_NO_DEDUCED_TYPENAME                         // The compiler fails to compile such cases. Fixed in VC7.0
+#    define EA_COMPILER_NO_STATIC_CONSTANTS                         // The compiler fails to compile such cases. Fixed in VC7.0
+#    define EA_COMPILER_NO_COVARIANT_RETURN_TYPE                    // The compiler fails to compile such cases. Fixed in VC7.1
+#    define EA_COMPILER_NO_ARGUMENT_DEPENDENT_LOOKUP                // The compiler compiles this OK, but executes it wrong. Fixed in VC7.1
+#    define EA_COMPILER_NO_TEMPLATE_TEMPLATES                       // The compiler fails to compile such cases. Fixed in VC7.1
+#    define EA_COMPILER_NO_TEMPLATE_PARTIAL_SPECIALIZATION          // The compiler fails to compile such cases. Fixed in VC7.1
+#    define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS                  // The compiler fails to compile such cases. Fixed in VC7.1
             //#define EA_COMPILER_NO_MEMBER_TEMPLATES                       // VC6.x supports member templates properly 95% of the time. So do we flag the remaining 5%?
             //#define EA_COMPILER_NO_MEMBER_TEMPLATE_SPECIALIZATION         // VC6.x supports member templates properly 95% of the time. So do we flag the remaining 5%?
 
-        #elif (_MSC_VER <= 1300) // If VC7.0 and earlier...
-            #define EA_COMPILER_MSVC7
+#  elif (_MSC_VER <= 1300) // If VC7.0 and earlier...
+#    define EA_COMPILER_MSVC7
 
-            #define EA_COMPILER_NO_COVARIANT_RETURN_TYPE                    // The compiler fails to compile such cases. Fixed in VC7.1
-            #define EA_COMPILER_NO_ARGUMENT_DEPENDENT_LOOKUP                // The compiler compiles this OK, but executes it wrong. Fixed in VC7.1
-            #define EA_COMPILER_NO_TEMPLATE_TEMPLATES                       // The compiler fails to compile such cases. Fixed in VC7.1
-            #define EA_COMPILER_NO_TEMPLATE_PARTIAL_SPECIALIZATION          // The compiler fails to compile such cases. Fixed in VC7.1
-            #define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS                  // The compiler fails to compile such cases. Fixed in VC7.1
-            #define EA_COMPILER_NO_MEMBER_FUNCTION_SPECIALIZATION           // This is the case only for VC7.0 and not VC6 or VC7.1+. Fixed in VC7.1
+#    define EA_COMPILER_NO_COVARIANT_RETURN_TYPE                    // The compiler fails to compile such cases. Fixed in VC7.1
+#    define EA_COMPILER_NO_ARGUMENT_DEPENDENT_LOOKUP                // The compiler compiles this OK, but executes it wrong. Fixed in VC7.1
+#    define EA_COMPILER_NO_TEMPLATE_TEMPLATES                       // The compiler fails to compile such cases. Fixed in VC7.1
+#    define EA_COMPILER_NO_TEMPLATE_PARTIAL_SPECIALIZATION          // The compiler fails to compile such cases. Fixed in VC7.1
+#    define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS                  // The compiler fails to compile such cases. Fixed in VC7.1
+#    define EA_COMPILER_NO_MEMBER_FUNCTION_SPECIALIZATION           // This is the case only for VC7.0 and not VC6 or VC7.1+. Fixed in VC7.1
             //#define EA_COMPILER_NO_MEMBER_TEMPLATES                       // VC7.0 supports member templates properly 95% of the time. So do we flag the remaining 5%?
 
-        #elif (_MSC_VER < 1400) // If VC7.1 ...
+#  elif (_MSC_VER < 1400) // If VC7.1 ...
             // The VC7.1 and later compiler is fairly close to the C++ standard 
             // and thus has no compiler limitations that we are concerned about.
-            #define EA_COMPILER_MSVC7_2003
-            #define EA_COMPILER_MSVC7_1
+#    define EA_COMPILER_MSVC7_2003
+#    define EA_COMPILER_MSVC7_1
 
-        #else // _MSC_VER of 1400 means VC8 (VS2005), 1500 means VC9 (VS2008)
-            #define EA_COMPILER_MSVC8_2005
-            #define EA_COMPILER_MSVC8_0
+#  else // _MSC_VER of 1400 means VC8 (VS2005), 1500 means VC9 (VS2008)
+#    define EA_COMPILER_MSVC8_2005
+#    define EA_COMPILER_MSVC8_0
 
-        #endif
+#  endif
 
 
     // IBM
-    #elif defined(__xlC__)
-        #define EA_COMPILER_IBM
-        #define EA_COMPILER_NAME "IBM XL C"
-        #define EA_COMPILER_VERSION __xlC__
-        #define EA_COMPILER_STRING "IBM XL C compiler, version " INTERNAL_STRINGIZE( __xlC__ )
+#elif defined(__xlC__)
+#  define EA_COMPILER_IBM
+#  define EA_COMPILER_NAME "IBM XL C"
+#  define EA_COMPILER_VERSION __xlC__
+#  define EA_COMPILER_STRING "IBM XL C compiler, version " INTERNAL_STRINGIZE( __xlC__ )
 
 
     // ARM compiler
-    #if defined(__ARMCC_VERSION)
+#  if defined(__ARMCC_VERSION)
         // Note that this refers to the ARM compiler (armcc or armcpp), but there
         // are other compilers that target ARM processors, such as GCC and Microsoft VC++.
         // If you want to detect compiling for the ARM processor, check for EA_PROCESSOR_ARM
         // being defined.
-        #define EA_COMPILER_ARM 
-        #define EA_COMPILER_VERSION __ARMCC_VERSION
-        #define EA_COMPILER_NAME    __CC_ARM
+#    define EA_COMPILER_ARM 
+#    define EA_COMPILER_VERSION __ARMCC_VERSION
+#    define EA_COMPILER_NAME    __CC_ARM
       //#define EA_COMPILER_STRING (defined below)
 
-    #endif
+#  endif
 
 
     // Unknown
-    #else // Else the compiler is unknown
+#else // Else the compiler is unknown
 
-        #define EA_COMPILER_VERSION 0
-        #define EA_COMPILER_NAME "Unknown"
+#  define EA_COMPILER_VERSION 0
+#  define EA_COMPILER_NAME "Unknown"
 
-    #endif
+#endif
 
-    #ifndef EA_COMPILER_STRING
-        #define EA_COMPILER_STRING EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE(EA_COMPILER_VERSION)
-    #endif
+#ifndef EA_COMPILER_STRING
+#  define EA_COMPILER_STRING EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE(EA_COMPILER_VERSION)
+#endif
 
 
     // Deprecated definitions
     // For backwards compatibility, should be supported for at least the life of EABase v2.0.x.
-    #ifndef EA_COMPILER_NO_TEMPLATE_PARTIAL_SPECIALIZATION
-        #define EA_COMPILER_PARTIAL_TEMPLATE_SPECIALIZATION
-    #endif
-    #ifndef EA_COMPILER_NO_TEMPLATE_SPECIALIZATION
-        #define EA_COMPILER_TEMPLATE_SPECIALIZATION
-    #endif
-    #ifndef EA_COMPILER_NO_MEMBER_TEMPLATES
-        #define EA_COMPILER_MEMBER_TEMPLATES
-    #endif
-    #ifndef EA_COMPILER_NO_MEMBER_TEMPLATE_SPECIALIZATION
-        #define EA_COMPILER_MEMBER_TEMPLATE_SPECIALIZATION
-    #endif
+#ifndef EA_COMPILER_NO_TEMPLATE_PARTIAL_SPECIALIZATION
+#  define EA_COMPILER_PARTIAL_TEMPLATE_SPECIALIZATION
+#endif
+#ifndef EA_COMPILER_NO_TEMPLATE_SPECIALIZATION
+#  define EA_COMPILER_TEMPLATE_SPECIALIZATION
+#endif
+#ifndef EA_COMPILER_NO_MEMBER_TEMPLATES
+#  define EA_COMPILER_MEMBER_TEMPLATES
+#endif
+#ifndef EA_COMPILER_NO_MEMBER_TEMPLATE_SPECIALIZATION
+#  define EA_COMPILER_MEMBER_TEMPLATE_SPECIALIZATION
+#endif
 
 
 
@@ -405,19 +410,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // If EA_COMPILER_NO_RTTI is defined, then RTTI (run-time type information)
     // is not available (possibly due to being disabled by the user).
     //
-    #if defined(__SNC__) && !defined(__RTTI)
-        #define EA_COMPILER_NO_RTTI
-    #elif defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
-        #define EA_COMPILER_NO_RTTI
-    #elif defined(__clang__) && !__has_feature(cxx_rtti)
-        #define EA_COMPILER_NO_RTTI
-    #elif defined(_MSC_VER) && !defined(_CPPRTTI)
-        #define EA_COMPILER_NO_RTTI
-    #elif defined(__MWERKS__)
-        #if !__option(RTTI)
-            #define EA_COMPILER_NO_RTTI
-        #endif
-    #endif
+#if defined(__SNC__) && !defined(__RTTI)
+#  define EA_COMPILER_NO_RTTI
+#elif defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
+#  define EA_COMPILER_NO_RTTI
+#elif defined(__clang__) && !__has_feature(cxx_rtti)
+#  define EA_COMPILER_NO_RTTI
+#elif defined(_MSC_VER) && !defined(_CPPRTTI)
+#  define EA_COMPILER_NO_RTTI
+#elif defined(__MWERKS__)
+#  if !__option(RTTI)
+#    define EA_COMPILER_NO_RTTI
+#  endif
+#endif
 
 
 
@@ -435,19 +440,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // systems of which some enable exception handling while others
     // don't, check for EA_COMPILER_NO_EXCEPTIONS being defined. 
     //
-    #if defined(EA_COMPILER_GNUC) && defined(_NO_EX) // GCC on some platforms (e.g. PS3) defines _NO_EX when exceptions are disabled.
-        #define EA_COMPILER_NO_EXCEPTIONS
+#if defined(EA_COMPILER_GNUC) && defined(_NO_EX) // GCC on some platforms (e.g. PS3) defines _NO_EX when exceptions are disabled.
+#  define EA_COMPILER_NO_EXCEPTIONS
 
-    #elif (defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_INTEL) || defined(EA_COMPILER_SN)) && !defined(__EXCEPTIONS) // GCC and most EDG-based compilers define __EXCEPTIONS when exception handling is enabled.
-        #define EA_COMPILER_NO_EXCEPTIONS
+#elif (defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_INTEL) || defined(EA_COMPILER_SN)) && !defined(__EXCEPTIONS) // GCC and most EDG-based compilers define __EXCEPTIONS when exception handling is enabled.
+#  define EA_COMPILER_NO_EXCEPTIONS
 
-    #elif defined(EA_COMPILER_CLANG) && !__has_feature(cxx_exceptions)
-        #define EA_COMPILER_NO_EXCEPTIONS
+#elif defined(EA_COMPILER_CLANG) && !__has_feature(cxx_exceptions)
+#  define EA_COMPILER_NO_EXCEPTIONS
 
-    #elif defined(EA_COMPILER_METROWERKS)
-        #if !__option(exceptions)
-            #define EA_COMPILER_NO_EXCEPTIONS
-        #endif
+#elif defined(EA_COMPILER_METROWERKS)
+#  if !__option(exceptions)
+#    define EA_COMPILER_NO_EXCEPTIONS
+#  endif
 
     // Borland and Micrsoft use the _CPUUNWIND define to denote that 
     // exception stack unwinding code generation is disabled. The result
@@ -456,10 +461,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // happen between a throw and the resulting catch. We thus don't 
     // want to define EA_COMPILER_NO_EXCEPTIONS, but perhaps users might
     // be interesting in knowing that unwinding is disabled.
-    #elif (defined(EA_COMPILER_BORLAND) || defined(EA_COMPILER_MSVC)) && !defined(_CPPUNWIND)
-        #define EA_COMPILER_NO_UNWIND
+#elif (defined(EA_COMPILER_BORLAND) || defined(EA_COMPILER_MSVC)) && !defined(_CPPUNWIND)
+#  define EA_COMPILER_NO_UNWIND
 
-    #endif // EA_COMPILER_NO_EXCEPTIONS / EA_COMPILER_NO_UNWIND
+#endif // EA_COMPILER_NO_EXCEPTIONS / EA_COMPILER_NO_UNWIND
 
 
 
@@ -467,9 +472,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //
     // If defined, then the compiler doesn't provide a Standard C++ library.
     //
-    #if defined(EA_PLATFORM_ANDROID)
-        #define EA_COMPILER_NO_STANDARD_CPP_LIBRARY
-    #endif
+#if defined(EA_PLATFORM_ANDROID)
+#  define EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+#endif
 
 
     // EA_COMPILER_NO_STATIC_VARIABLE_INIT
