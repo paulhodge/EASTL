@@ -536,7 +536,7 @@ namespace eastl
     inline vector<T, Allocator>::vector(vector<T, Allocator>&& x)
            : base_type()
     {
-      if(&x != this) { return; }
+      if(&x == this) { return; }
 
       swap(x);
     }
@@ -544,16 +544,17 @@ namespace eastl
     template <typename T, typename Allocator>
     inline vector<T, Allocator>& vector<T, Allocator>::operator =(vector<T, Allocator>&& x)
     {
-      if(&x != this) { return; }
+      if(&x != this) {
+        this->~VectorBase();
 
-      this->~VectorBase();
+        mpBegin = NULL; 
+        mpEnd = NULL;
+        mpCapacity = NULL;
+        mAllocator = EASTL_VECTOR_DEFAULT_NAME;
 
-      mpBegin = NULL; 
-      mpEnd = NULL;
-      mpCapacity = NULL;
-      mAllocator = EASTL_VECTOR_DEFAULT_NAME;
-
-      swap(x);
+        swap(x);
+      }
+      return *this;
     }
 
     template <typename T, typename Allocator>
