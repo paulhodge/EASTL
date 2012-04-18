@@ -95,12 +95,12 @@ namespace eastl
     ///
     EASTL_API void AssertionFailureFunctionDefault(const char* pExpression, void* /*pContext*/)
     {
+        (void)pExpression;
 #if defined(EA_DEBUG) || defined(_DEBUG)       
         // We cannot use puts() because it appends a newline.
         // We cannot use printf(pExpression) because pExpression might have formatting statements.
         #if defined(EA_PLATFORM_MICROSOFT)
             OutputDebugStringA(pExpression);
-            (void)pExpression;
         #else
             printf("%s", pExpression); // Write the message to stdout, which happens to be the trace view for many console debug machines.
         #endif

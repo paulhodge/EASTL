@@ -74,32 +74,32 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <EASTL/memory.h>
 
 #ifdef _MSC_VER
-    #pragma warning(push, 0)
-    #include <new>
-    #include <stddef.h>
-    #pragma warning(pop)
+#  pragma warning(push, 0)
+#  include <new>
+#  include <stddef.h>
+#  pragma warning(pop)
 #else
-    #include <new>
-    #include <stddef.h>
+#  include <new>
+#  include <stddef.h>
 #endif
 
 #if EASTL_EXCEPTIONS_ENABLED
-    #ifdef _MSC_VER
-        #pragma warning(push, 0)
-    #endif
-    #include <stdexcept> // std::out_of_range, std::length_error.
-    #ifdef _MSC_VER
-        #pragma warning(pop)
-    #endif
+#  ifdef _MSC_VER
+#    pragma warning(push, 0)
+#  endif
+#  include <stdexcept> // std::out_of_range, std::length_error.
+#  ifdef _MSC_VER
+#    pragma warning(pop)
+#  endif
 #endif
 
 #ifdef _MSC_VER
-    #pragma warning(push)
-    #pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
-    #pragma warning(disable: 4345)  // Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
-    #pragma warning(disable: 4244)  // Argument: conversion from 'int' to 'const eastl::vector<T>::value_type', possible loss of data
-    #pragma warning(disable: 4127)  // Conditional expression is constant
-    #pragma warning(disable: 4480)  // nonstandard extension used: specifying underlying type for enum
+#  pragma warning(push)
+#  pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+#  pragma warning(disable: 4345)  // Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
+#  pragma warning(disable: 4244)  // Argument: conversion from 'int' to 'const eastl::vector<T>::value_type', possible loss of data
+#  pragma warning(disable: 4127)  // Conditional expression is constant
+#  pragma warning(disable: 4480)  // nonstandard extension used: specifying underlying type for enum
 #endif
 
 
@@ -110,16 +110,16 @@ namespace eastl
     ///
     /// Defines a default container name in the absence of a user-provided name.
     ///
-    #ifndef EASTL_VECTOR_DEFAULT_NAME
-        #define EASTL_VECTOR_DEFAULT_NAME EASTL_DEFAULT_NAME_PREFIX " vector" // Unless the user overrides something, this is "EASTL vector".
-    #endif
+#ifndef EASTL_VECTOR_DEFAULT_NAME
+#  define EASTL_VECTOR_DEFAULT_NAME EASTL_DEFAULT_NAME_PREFIX " vector" // Unless the user overrides something, this is "EASTL vector".
+#endif
 
 
     /// EASTL_VECTOR_DEFAULT_ALLOCATOR
     ///
-    #ifndef EASTL_VECTOR_DEFAULT_ALLOCATOR
-        #define EASTL_VECTOR_DEFAULT_ALLOCATOR allocator_type(EASTL_VECTOR_DEFAULT_NAME)
-    #endif
+#ifndef EASTL_VECTOR_DEFAULT_ALLOCATOR
+#  define EASTL_VECTOR_DEFAULT_ALLOCATOR allocator_type(EASTL_VECTOR_DEFAULT_NAME)
+#endif
 
 
 
@@ -157,15 +157,15 @@ namespace eastl
         typedef eastl_size_t size_type;             // See config.h for the definition of eastl_size_t, which defaults to uint32_t.
         typedef ptrdiff_t    difference_type;
 
-        #if defined(_MSC_VER) && (_MSC_VER >= 1400) // _MSC_VER of 1400 means VC8 (VS2005), 1500 means VC9 (VS2008)
+#if defined(_MSC_VER) && (_MSC_VER >= 1400) // _MSC_VER of 1400 means VC8 (VS2005), 1500 means VC9 (VS2008)
             enum : size_type {                      // Use Microsoft enum language extension, allowing for smaller debug symbols than using a static const. Users have been affected by this.
                 npos     = (size_type)-1,
                 kMaxSize = (size_type)-2
             };
-        #else
+#else
             static const size_type npos     = (size_type)-1;      /// 'npos' means non-valid position or simply non-position.
             static const size_type kMaxSize = (size_type)-2;      /// -1 is reserved for 'npos'. It also happens to be slightly beneficial that kMaxSize is a value less than -1, as it helps us deal with potential integer wraparound issues.
-        #endif
+#endif
 
         enum
         {
@@ -239,6 +239,21 @@ namespace eastl
         vector(size_type n, const value_type& value, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
         vector(const this_type& x);
 
+#ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
+        vector(this_type&& x);
+        this_type& operator =(this_type&& x);
+        iterator insert(iterator position, value_type&& value);
+        void push_back(value_type&& x);
+#  ifdef EA_COMPILER_HAS_VARIADIC_TEMPLATES
+        /*
+        template<class ... Args>
+        iterator emplace(const_iterator pos, Args&& ... args);
+        template<class ... Args>
+        iterator emplace_back(const_iterator pos, Args&& ... args);
+        */
+#  endif
+#endif
+
         template <typename InputIterator>
         vector(InputIterator first, InputIterator last); // allocator arg removed because VC7.1 fails on the default arg. To do: Make a second version of this function without a default arg.
 
@@ -254,7 +269,7 @@ namespace eastl
 
         iterator       begin();
         const_iterator begin() const;
-
+        
         iterator       end();
         const_iterator end() const;
 
@@ -432,10 +447,10 @@ namespace eastl
     template <typename T, typename Allocator>
     inline T* VectorBase<T, Allocator>::DoAllocate(size_type n)
     {
-        #if EASTL_ASSERT_ENABLED
+#if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(n >= 0x80000000))
                 EASTL_FAIL_MSG("vector::DoAllocate -- improbably large request.");
-        #endif
+#endif
 
         // If n is zero, then we allocate no memory and just return NULL. 
         // This is fine, as our default ctor initializes with NULL pointers. 
@@ -516,6 +531,57 @@ namespace eastl
         DoInit(first, last, is_integral<InputIterator>());
     }
 
+#ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
+    template <typename T, typename Allocator>
+    inline vector<T, Allocator>::vector(vector<T, Allocator>&& x)
+           : base_type()
+    {
+      if(&x == this) { return; }
+
+      swap(x);
+    }
+
+    template <typename T, typename Allocator>
+    inline vector<T, Allocator>& vector<T, Allocator>::operator =(vector<T, Allocator>&& x)
+    {
+      if(&x != this) {
+        this->~VectorBase();
+
+        mpBegin = NULL; 
+        mpEnd = NULL;
+        mpCapacity = NULL;
+        mAllocator = EASTL_VECTOR_DEFAULT_NAME;
+
+        swap(x);
+      }
+      return *this;
+    }
+
+    template <typename T, typename Allocator>
+    inline typename vector<T, Allocator>::iterator vector<T, Allocator>::insert(
+        typename vector<T, Allocator>::iterator const pos, T&& x)
+    {
+      iterator const ret = insert(pos, value_type());
+      *ret = x;
+      return ret;
+    }
+
+    template <typename T, typename Allocator>
+    inline void vector<T, Allocator>::push_back(T&& x) {
+      push_back() = x;
+    }
+#  ifdef EA_COMPILER_HAS_VARIADIC_TEMPLATES
+    /*
+    template <typename T, typename Allocator>
+    template<class ... Args>
+    typename vector<T, Allocator>::iterator vector<T, Allocator>::emplace(const_iterator pos, Args&& ... args);
+
+    template <typename T, typename Allocator>
+    template<class ... Args>
+    typename vector<T, Allocator>::iterator vector<T, Allocator>::emplace_back(const_iterator pos, Args&& ... args);
+    */
+#  endif
+#endif
 
     template <typename T, typename Allocator>
     inline vector<T, Allocator>::~vector()
@@ -531,9 +597,9 @@ namespace eastl
     {
         if(&x != this)
         {
-            #if EASTL_ALLOCATOR_COPY_ENABLED
+#if EASTL_ALLOCATOR_COPY_ENABLED
                 mAllocator = x.mAllocator;
-            #endif
+#endif
 
             const size_type n = x.size();
 
@@ -756,13 +822,13 @@ namespace eastl
     inline typename vector<T, Allocator>::reference
     vector<T, Allocator>::operator[](size_type n)
     {
-        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container.
+#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container.
             if(EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
                 EASTL_FAIL_MSG("vector::operator[] -- out of range");
-        #elif EASTL_ASSERT_ENABLED
+#elif EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
                 EASTL_FAIL_MSG("vector::operator[] -- out of range");
-        #endif
+#endif
 
         return *(mpBegin + n);
     }
@@ -772,13 +838,13 @@ namespace eastl
     inline typename vector<T, Allocator>::const_reference
     vector<T, Allocator>::operator[](size_type n) const
     {
-        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container.
+#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container.
             if(EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
                 EASTL_FAIL_MSG("vector::operator[] -- out of range");
-        #elif EASTL_ASSERT_ENABLED
+#elif EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
                 EASTL_FAIL_MSG("vector::operator[] -- out of range");
-        #endif
+#endif
 
         return *(mpBegin + n);
     }
@@ -788,13 +854,13 @@ namespace eastl
     inline typename vector<T, Allocator>::reference
     vector<T, Allocator>::at(size_type n)
     {
-        #if EASTL_EXCEPTIONS_ENABLED
+#if EASTL_EXCEPTIONS_ENABLED
             if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
                 throw std::out_of_range("vector::at -- out of range");
-        #elif EASTL_ASSERT_ENABLED
+#elif EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
                 EASTL_FAIL_MSG("vector::at -- out of range");
-        #endif
+#endif
 
         return *(mpBegin + n);
     }
@@ -804,13 +870,13 @@ namespace eastl
     inline typename vector<T, Allocator>::const_reference
     vector<T, Allocator>::at(size_type n) const
     {
-        #if EASTL_EXCEPTIONS_ENABLED
+#if EASTL_EXCEPTIONS_ENABLED
             if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
                 throw std::out_of_range("vector::at -- out of range");
-        #elif EASTL_ASSERT_ENABLED
+#elif EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
                 EASTL_FAIL_MSG("vector::at -- out of range");
-        #endif
+#endif
 
         return *(mpBegin + n);
     }
@@ -820,12 +886,12 @@ namespace eastl
     inline typename vector<T, Allocator>::reference
     vector<T, Allocator>::front()
     {
-        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
             // We allow the user to reference an empty container.
-        #elif EASTL_ASSERT_ENABLED
+#elif EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
                 EASTL_FAIL_MSG("vector::front -- empty vector");
-        #endif
+#endif
 
         return *mpBegin;
     }
@@ -835,12 +901,12 @@ namespace eastl
     inline typename vector<T, Allocator>::const_reference
     vector<T, Allocator>::front() const
     {
-        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
             // We allow the user to reference an empty container.
-        #elif EASTL_ASSERT_ENABLED
+#elif EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
                 EASTL_FAIL_MSG("vector::front -- empty vector");
-        #endif
+#endif
 
         return *mpBegin;
     }
@@ -850,12 +916,12 @@ namespace eastl
     inline typename vector<T, Allocator>::reference
     vector<T, Allocator>::back()
     {
-        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
             // We allow the user to reference an empty container.
-        #elif EASTL_ASSERT_ENABLED
+#elif EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
                 EASTL_FAIL_MSG("vector::back -- empty vector");
-        #endif
+#endif
 
         return *(mpEnd - 1);
     }
@@ -865,12 +931,12 @@ namespace eastl
     inline typename vector<T, Allocator>::const_reference
     vector<T, Allocator>::back() const
     {
-        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
             // We allow the user to reference an empty container.
-        #elif EASTL_ASSERT_ENABLED
+#elif EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
                 EASTL_FAIL_MSG("vector::back -- empty vector");
-        #endif
+#endif
 
         return *(mpEnd - 1);
     }
@@ -915,10 +981,10 @@ namespace eastl
     template <typename T, typename Allocator>
     inline void vector<T, Allocator>::pop_back()
     {
-        #if EASTL_ASSERT_ENABLED
+#if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(mpEnd <= mpBegin))
                 EASTL_FAIL_MSG("vector::pop_back -- empty vector");
-        #endif
+#endif
 
         --mpEnd;
         mpEnd->~value_type();
@@ -929,10 +995,10 @@ namespace eastl
     inline typename vector<T, Allocator>::iterator
     vector<T, Allocator>::insert(iterator position, const value_type& value)
     {
-        #if EASTL_ASSERT_ENABLED
+#if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
                 EASTL_FAIL_MSG("vector::insert -- invalid position");
-        #endif
+#endif
 
         const ptrdiff_t n = position - mpBegin; // Save this because we might reallocate.
 
@@ -964,10 +1030,10 @@ namespace eastl
     inline typename vector<T, Allocator>::iterator
     vector<T, Allocator>::erase(iterator position)
     {
-        #if EASTL_ASSERT_ENABLED
+#if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY((position < mpBegin) || (position >= mpEnd)))
                 EASTL_FAIL_MSG("vector::erase -- invalid position");
-        #endif
+#endif
 
         if((position + 1) < mpEnd)
             eastl::copy(position + 1, mpEnd, position);
@@ -981,10 +1047,10 @@ namespace eastl
     inline typename vector<T, Allocator>::iterator
     vector<T, Allocator>::erase(iterator first, iterator last)
     {
-        #if EASTL_ASSERT_ENABLED
+#if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY((first < mpBegin) || (first > mpEnd) || (last < mpBegin) || (last > mpEnd) || (last < first)))
                 EASTL_FAIL_MSG("vector::erase -- invalid position");
-        #endif
+#endif
  
         //#if 0 
             // Reference implementation, known to be correct:
@@ -1253,10 +1319,10 @@ namespace eastl
     template <typename BidirectionalIterator>
     void vector<T, Allocator>::DoInsertFromIterator(iterator position, BidirectionalIterator first, BidirectionalIterator last, EASTL_ITC_NS::bidirectional_iterator_tag)
     {
-        #if EASTL_ASSERT_ENABLED
+#if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
                 EASTL_FAIL_MSG("vector::insert -- invalid position");
-        #endif
+#endif
 
         if(first != last)
         {
@@ -1292,7 +1358,7 @@ namespace eastl
                 const size_type nNewSize  = nGrowSize > (nPrevSize + n) ? nGrowSize : (nPrevSize + n);
                 pointer const   pNewData  = DoAllocate(nNewSize);
 
-                #if EASTL_EXCEPTIONS_ENABLED
+#if EASTL_EXCEPTIONS_ENABLED
                     pointer pNewEnd = pNewData;
                     try
                     {
@@ -1306,11 +1372,11 @@ namespace eastl
                         DoFree(pNewData, nNewSize);
                         throw;
                     }
-                #else
+#else
                     pointer pNewEnd = eastl::uninitialized_copy_ptr(mpBegin, position, pNewData);
                     pNewEnd         = eastl::uninitialized_copy_ptr(first, last, pNewEnd);
                     pNewEnd         = eastl::uninitialized_copy_ptr(position, mpEnd, pNewEnd);
-                #endif
+#endif
 
                 DoDestroyValues(mpBegin, mpEnd);
                 DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
@@ -1326,10 +1392,10 @@ namespace eastl
     template <typename T, typename Allocator>
     void vector<T, Allocator>::DoInsertValues(iterator position, size_type n, const value_type& value)
     {
-        #if EASTL_ASSERT_ENABLED
+#if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
                 EASTL_FAIL_MSG("vector::insert -- invalid position");
-        #endif
+#endif
 
         if(n <= size_type(mpCapacity - mpEnd)) // If n is <= capacity...
         {
@@ -1364,7 +1430,7 @@ namespace eastl
             const size_type nNewSize  = nGrowSize > (nPrevSize + n) ? nGrowSize : (nPrevSize + n);
             pointer const pNewData    = DoAllocate(nNewSize);
 
-            #if EASTL_EXCEPTIONS_ENABLED
+#if EASTL_EXCEPTIONS_ENABLED
                 pointer pNewEnd = pNewData;
                 try
                 {
@@ -1378,11 +1444,11 @@ namespace eastl
                     DoFree(pNewData, nNewSize);
                     throw;
                 }
-            #else
+#else
                 pointer pNewEnd = eastl::uninitialized_copy_ptr(mpBegin, position, pNewData);
                 eastl::uninitialized_fill_n_ptr(pNewEnd, n, value);
                 pNewEnd = eastl::uninitialized_copy_ptr(position, mpEnd, pNewEnd + n);
-            #endif
+#endif
 
             DoDestroyValues(mpBegin, mpEnd);
             DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
@@ -1397,10 +1463,10 @@ namespace eastl
     template <typename T, typename Allocator>
     void vector<T, Allocator>::DoInsertValue(iterator position, const value_type& value)
     {
-        #if EASTL_ASSERT_ENABLED
+#if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
                 EASTL_FAIL_MSG("vector::insert -- invalid position");
-        #endif
+#endif
 
         if(mpEnd != mpCapacity) // If size < capacity ...
         {
@@ -1420,7 +1486,7 @@ namespace eastl
             const size_type nNewSize  = GetNewCapacity(nPrevSize);
             pointer const   pNewData  = DoAllocate(nNewSize);
 
-            #if EASTL_EXCEPTIONS_ENABLED
+#if EASTL_EXCEPTIONS_ENABLED
                 pointer pNewEnd = pNewData;
                 try
                 {
@@ -1434,11 +1500,11 @@ namespace eastl
                     DoFree(pNewData, nNewSize);
                     throw;
                 }
-            #else
+#else
                 pointer pNewEnd = eastl::uninitialized_copy_ptr(mpBegin, position, pNewData);
                 ::new(pNewEnd) value_type(value);
                 pNewEnd = eastl::uninitialized_copy_ptr(position, mpEnd, ++pNewEnd);
-            #endif
+#endif
 
             DoDestroyValues(mpBegin, mpEnd);
             DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
@@ -1535,7 +1601,7 @@ namespace eastl
 
 
 #ifdef _MSC_VER
-    #pragma warning(pop)
+#  pragma warning(pop)
 #endif
 
 

@@ -357,6 +357,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define EA_PROCESSOR_POWERPC_32
         #define EA_SYSTEM_BIG_ENDIAN
         #define EA_PLATFORM_DESCRIPTION "Linux on PowerPC"
+    #elif defined(__arm__)
+        #define EA_PROCESSOR_ARM
+        #define EA_SYSTEM_LITTLE_ENDIAN
+        #define EA_PLATFORM_DESCRIPTION "Linux on ARM"
     #else
         #error Unknown processor
         #error Unknown endianness
