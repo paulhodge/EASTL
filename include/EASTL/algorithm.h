@@ -1389,7 +1389,7 @@ namespace eastl
             while((--it1 != first1) && (eastl::find_if(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1)) != last2))
                 ; // Do nothing
 
-            if((it1 != first1) || (eastl::find_if(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1))) != last2)
+            if((it1 != first1) || (eastl::find_if(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1))) == last2)
                 return it1;
         }
 
