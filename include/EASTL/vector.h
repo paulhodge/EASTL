@@ -567,9 +567,14 @@ namespace eastl
     }
 
     template <typename T, typename Allocator>
-    inline void vector<T, Allocator>::push_back(T&& x) {
-      push_back() = x;
+    inline void vector<T, Allocator>::push_back(T&& value)
+	{
+        if(mpEnd < mpCapacity)
+            ::new(mpEnd++) value_type(value);
+        else // Note that in this case we create a temporary, which is less desirable.
+            DoInsertValue(mpEnd, value);
     }
+
 #  ifdef EA_COMPILER_HAS_VARIADIC_TEMPLATES
     /*
     template <typename T, typename Allocator>
