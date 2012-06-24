@@ -559,11 +559,21 @@ namespace eastl
 
     template <typename T, typename Allocator>
     inline typename vector<T, Allocator>::iterator vector<T, Allocator>::insert(
-        typename vector<T, Allocator>::iterator const pos, T&& x)
+        typename vector<T, Allocator>::iterator const position, T&& value)
     {
-      iterator const ret = insert(pos, value_type());
-      *ret = x;
-      return ret;
+#if EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
+                EASTL_FAIL_MSG("vector::insert -- invalid position");
+#endif
+
+        const ptrdiff_t n = position - mpBegin; // Save this because we might reallocate.
+
+        if((mpEnd == mpCapacity) || (position != mpEnd))
+            DoInsertValue(position, value);
+        else
+            ::new(mpEnd++) value_type(value);
+
+        return mpBegin + n;
     }
 
     template <typename T, typename Allocator>
