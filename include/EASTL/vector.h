@@ -559,17 +559,32 @@ namespace eastl
 
     template <typename T, typename Allocator>
     inline typename vector<T, Allocator>::iterator vector<T, Allocator>::insert(
-        typename vector<T, Allocator>::iterator const pos, T&& x)
+        typename vector<T, Allocator>::iterator const position, T&& value)
     {
-      iterator const ret = insert(pos, value_type());
-      *ret = x;
-      return ret;
+#if EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
+                EASTL_FAIL_MSG("vector::insert -- invalid position");
+#endif
+
+        const ptrdiff_t n = position - mpBegin; // Save this because we might reallocate.
+
+        if((mpEnd == mpCapacity) || (position != mpEnd))
+            DoInsertValue(position, value);
+        else
+            ::new(mpEnd++) value_type(value);
+
+        return mpBegin + n;
     }
 
     template <typename T, typename Allocator>
-    inline void vector<T, Allocator>::push_back(T&& x) {
-      push_back() = x;
+    inline void vector<T, Allocator>::push_back(T&& value)
+	{
+        if(mpEnd < mpCapacity)
+            ::new(mpEnd++) value_type(value);
+        else // Note that in this case we create a temporary, which is less desirable.
+            DoInsertValue(mpEnd, value);
     }
+
 #  ifdef EA_COMPILER_HAS_VARIADIC_TEMPLATES
     /*
     template <typename T, typename Allocator>
