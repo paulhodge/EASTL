@@ -3,10 +3,14 @@ compiler:
   - clang
   - gcc
 before_script:
-  - cmake -D CMAKE_BUILD_TYPE=Debug .
+  - cmake -D CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
 script: make
 after_script:
   - make test
+env:
+  matrix:
+    - CMAKE_BUILD_TYPE=DEBUG
+    - CMAKE_BUILD_TYPE=RELEASE
 notifications:
   email:
     on_success: always
