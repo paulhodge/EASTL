@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <eastl/internal/config.h>
+#include <EASTL/internal/config.h>
 
 
 // EASTL expects us to define these, see allocator.h line 194
