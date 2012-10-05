@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstdlib>
 #include <EASTL/internal/config.h>
 
 
