@@ -1,0 +1,16 @@
+language: cpp
+compiler:
+  - clang
+  - gcc
+before_script:
+  - cmake -D CMAKE_BUILD_TYPE=Debug .
+script: make
+after_script: make test
+install: make install
+branches:
+  only:
+    - master
+notifications:
+  email:
+    on_success: always
+    on_failure: always
