@@ -5,8 +5,9 @@ compiler:
 before_script:
   - cmake -D CMAKE_BUILD_TYPE=Debug .
 script: make
-after_script: make test
-install: make install
+after_script:
+  - make test
+  - make install
 branches:
   only:
     - master
