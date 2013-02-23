@@ -106,29 +106,30 @@ namespace eastl
     // set a given class to be identified as a signed type.
     ///////////////////////////////////////////////////////////////////////
     template <typename T> struct is_signed : public false_type{};
-
-    template <> struct is_signed<signed char>              : public true_type{};
-    template <> struct is_signed<const signed char>        : public true_type{};
-    template <> struct is_signed<signed short>             : public true_type{};
-    template <> struct is_signed<const signed short>       : public true_type{};
-    template <> struct is_signed<signed int>               : public true_type{};
-    template <> struct is_signed<const signed int>         : public true_type{};
-    template <> struct is_signed<signed long>              : public true_type{};
-    template <> struct is_signed<const signed long>        : public true_type{};
-    template <> struct is_signed<signed long long>         : public true_type{};
-    template <> struct is_signed<const signed long long>   : public true_type{};
-
+    
+    #define EASTL_TMP_DECLARE_SIGNED_WITH_CV(T)\
+        template <> struct is_signed<T>                : public true_type{};\
+        template <> struct is_signed<T const>          : public true_type{};\
+        template <> struct is_signed<T volatile>       : public true_type{};\
+        template <> struct is_signed<T const volatile> : public true_type{};
+    
+    EASTL_TMP_DECLARE_SIGNED_WITH_CV(signed char)
+    EASTL_TMP_DECLARE_SIGNED_WITH_CV(signed short)
+    EASTL_TMP_DECLARE_SIGNED_WITH_CV(signed int)
+    EASTL_TMP_DECLARE_SIGNED_WITH_CV(signed long)
+    EASTL_TMP_DECLARE_SIGNED_WITH_CV(signed long long)
+    
     #if (CHAR_MAX == SCHAR_MAX)
-        template <> struct is_signed<char>            : public true_type{};
-        template <> struct is_signed<const char>      : public true_type{};
+        EASTL_TMP_DECLARE_SIGNED_WITH_CV(char)
     #endif
     #ifndef EA_WCHAR_T_NON_NATIVE // If wchar_t is a native type instead of simply a define to an existing type...
         #if defined(__WCHAR_MAX__) && ((__WCHAR_MAX__ == 2147483647) || (__WCHAR_MAX__ == 32767)) // GCC defines __WCHAR_MAX__ for most platforms.
-            template <> struct is_signed<wchar_t>         : public true_type{};
-            template <> struct is_signed<const wchar_t>   : public true_type{};
+            EASTL_TMP_DECLARE_SIGNED_WITH_CV(wchar_t)
         #endif
     #endif
-
+    
+    #undef EASTL_TMP_DECLARE_SIGNED_WITH_CV
+    
     #define EASTL_DECLARE_SIGNED(T) namespace eastl{ template <> struct is_signed<T> : public true_type{}; template <> struct is_signed<const T> : public true_type{}; }
 
 
@@ -150,29 +151,30 @@ namespace eastl
     // set a given class to be identified as an unsigned type.
     ///////////////////////////////////////////////////////////////////////
     template <typename T> struct is_unsigned : public false_type{};
-
-    template <> struct is_unsigned<unsigned char>              : public true_type{};
-    template <> struct is_unsigned<const unsigned char>        : public true_type{};
-    template <> struct is_unsigned<unsigned short>             : public true_type{};
-    template <> struct is_unsigned<const unsigned short>       : public true_type{};
-    template <> struct is_unsigned<unsigned int>               : public true_type{};
-    template <> struct is_unsigned<const unsigned int>         : public true_type{};
-    template <> struct is_unsigned<unsigned long>              : public true_type{};
-    template <> struct is_unsigned<const unsigned long>        : public true_type{};
-    template <> struct is_unsigned<unsigned long long>         : public true_type{};
-    template <> struct is_unsigned<const unsigned long long>   : public true_type{};
-
+    
+    #define EASTL_TMP_DECLARE_UNSIGNED_WITH_CV(T)\
+        template <> struct is_unsigned<T>                : public true_type{};\
+        template <> struct is_unsigned<T const>          : public true_type{};\
+        template <> struct is_unsigned<T volatile>       : public true_type{};\
+        template <> struct is_unsigned<T const volatile> : public true_type{};
+    
+    EASTL_TMP_DECLARE_UNSIGNED_WITH_CV(unsigned char)
+    EASTL_TMP_DECLARE_UNSIGNED_WITH_CV(unsigned short)
+    EASTL_TMP_DECLARE_UNSIGNED_WITH_CV(unsigned int)
+    EASTL_TMP_DECLARE_UNSIGNED_WITH_CV(unsigned long)
+    EASTL_TMP_DECLARE_UNSIGNED_WITH_CV(unsigned long long)
+    
     #if (CHAR_MAX == UCHAR_MAX)
-        template <> struct is_unsigned<char>            : public true_type{};
-        template <> struct is_unsigned<const char>      : public true_type{};
+        EASTL_TMP_DECLARE_UNSIGNED_WITH_CV(char)
     #endif
     #ifndef EA_WCHAR_T_NON_NATIVE // If wchar_t is a native type instead of simply a define to an existing type...
         #if defined(_MSC_VER) || (defined(__WCHAR_MAX__) && ((__WCHAR_MAX__ == 4294967295U) || (__WCHAR_MAX__ == 65535))) // GCC defines __WCHAR_MAX__ for most platforms.
-            template <> struct is_unsigned<wchar_t>         : public true_type{};
-            template <> struct is_unsigned<const wchar_t>   : public true_type{};
+            EASTL_TMP_DECLARE_UNSIGNED_WITH_CV(wchar_t)
         #endif
     #endif
-
+    
+    #undef EASTL_TMP_DECLARE_UNSIGNED_WITH_CV
+    
     #define EASTL_DECLARE_UNSIGNED(T) namespace eastl{ template <> struct is_unsigned<T> : public true_type{}; template <> struct is_unsigned<const T> : public true_type{}; }
 
 
