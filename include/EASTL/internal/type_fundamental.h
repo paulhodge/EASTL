@@ -79,38 +79,34 @@ namespace eastl
     //
     ///////////////////////////////////////////////////////////////////////
     template <typename T> struct is_integral : public false_type{};
-
-    // To do: Need to define volatile and const volatile versions of these.
-    template <> struct is_integral<unsigned char>            : public true_type{};
-    template <> struct is_integral<const unsigned char>      : public true_type{};
-    template <> struct is_integral<unsigned short>           : public true_type{};
-    template <> struct is_integral<const unsigned short>     : public true_type{};
-    template <> struct is_integral<unsigned int>             : public true_type{};
-    template <> struct is_integral<const unsigned int>       : public true_type{};
-    template <> struct is_integral<unsigned long>            : public true_type{};
-    template <> struct is_integral<const unsigned long>      : public true_type{};
-    template <> struct is_integral<unsigned long long>       : public true_type{};
-    template <> struct is_integral<const unsigned long long> : public true_type{};
-
-    template <> struct is_integral<signed char>              : public true_type{};
-    template <> struct is_integral<const signed char>        : public true_type{};
-    template <> struct is_integral<signed short>             : public true_type{};
-    template <> struct is_integral<const signed short>       : public true_type{};
-    template <> struct is_integral<signed int>               : public true_type{};
-    template <> struct is_integral<const signed int>         : public true_type{};
-    template <> struct is_integral<signed long>              : public true_type{};
-    template <> struct is_integral<const signed long>        : public true_type{};
-    template <> struct is_integral<signed long long>         : public true_type{};
-    template <> struct is_integral<const signed long long>   : public true_type{};
-
-    template <> struct is_integral<bool>            : public true_type{};
-    template <> struct is_integral<const bool>      : public true_type{};
-    template <> struct is_integral<char>            : public true_type{};
-    template <> struct is_integral<const char>      : public true_type{};
+    
+    #define EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(T)\
+        template <> struct is_integral<T>                : public true_type{};\
+        template <> struct is_integral<T const>          : public true_type{};\
+        template <> struct is_integral<T volatile>       : public true_type{};\
+        template <> struct is_integral<T const volatile> : public true_type{};
+    
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(unsigned char)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(unsigned short)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(unsigned int)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(unsigned long)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(unsigned long long)
+    
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(signed char)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(signed short)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(signed int)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(signed long)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(signed long long)
+    
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(bool)
+    EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(char)
+    
     #ifndef EA_WCHAR_T_NON_NATIVE // If wchar_t is a native type instead of simply a define to an existing type...
-        template <> struct is_integral<wchar_t>         : public true_type{};
-        template <> struct is_integral<const wchar_t>   : public true_type{};
+        EASTL_TMP_DECLARE_INTEGRAL_WITH_CV(wchar_t)
     #endif
+    
+    #undef EASTL_TMP_DECLARE_INTEGRAL_WITH_CV
+
 
     ///////////////////////////////////////////////////////////////////////
     // is_floating_point
@@ -122,15 +118,18 @@ namespace eastl
     //
     ///////////////////////////////////////////////////////////////////////
     template <typename T> struct is_floating_point : public false_type{};
-
-    // To do: Need to define volatile and const volatile versions of these.
-    template <> struct is_floating_point<float>             : public true_type{};
-    template <> struct is_floating_point<const float>       : public true_type{};
-    template <> struct is_floating_point<double>            : public true_type{};
-    template <> struct is_floating_point<const double>      : public true_type{};
-    template <> struct is_floating_point<long double>       : public true_type{};
-    template <> struct is_floating_point<const long double> : public true_type{};
-
+    
+    #define EASTL_TMP_DECLARE_FLOATING_POINT_WITH_CV(T)\
+        template <> struct is_floating_point<T>                : public true_type{};\
+        template <> struct is_floating_point<T const>          : public true_type{};\
+        template <> struct is_floating_point<T volatile>       : public true_type{};\
+        template <> struct is_floating_point<T const volatile> : public true_type{};
+    
+    EASTL_TMP_DECLARE_FLOATING_POINT_WITH_CV(float)
+    EASTL_TMP_DECLARE_FLOATING_POINT_WITH_CV(double)
+    EASTL_TMP_DECLARE_FLOATING_POINT_WITH_CV(long double)
+    
+    #undef EASTL_TMP_DECLARE_FLOATING_POINT_WITH_CV
 
 
     ///////////////////////////////////////////////////////////////////////
