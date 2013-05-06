@@ -545,7 +545,8 @@ namespace eastl
     inline vector<T, Allocator>& vector<T, Allocator>::operator =(vector<T, Allocator>&& x)
     {
       if(&x != this) {
-        base_type::~VectorBase();
+        DoDestroyValues(mpBegin, mpEnd);
+        DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
 
         mpBegin = NULL; 
         mpEnd = NULL;
