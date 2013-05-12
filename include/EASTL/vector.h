@@ -580,10 +580,10 @@ namespace eastl
 
     template <typename T, typename Allocator>
     inline void vector<T, Allocator>::push_back(T&& value)
-	{
+    {
         if(mpEnd < mpCapacity)
-			::new(mpEnd++) value_type(std::forward<T>(value));
-        else // Note that in this case we create a temporary, which is less desirable.
+            ::new(mpEnd++) value_type(std::forward<T>(value));
+        else
             DoInsertValue(mpEnd, std::forward<T>(value));
     }
 

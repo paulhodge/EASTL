@@ -329,6 +329,7 @@ namespace eastl
         EASTL_STRING_EXPLICIT basic_string(const value_type* p, const allocator_type& allocator = EASTL_BASIC_STRING_DEFAULT_ALLOCATOR);
         basic_string(size_type n, value_type c, const allocator_type& allocator = EASTL_BASIC_STRING_DEFAULT_ALLOCATOR);
         basic_string(const this_type& x);
+        basic_string(this_type&& x);
         basic_string(const value_type* pBegin, const value_type* pEnd, const allocator_type& allocator = EASTL_BASIC_STRING_DEFAULT_ALLOCATOR);
         basic_string(CtorDoNotInitialize, size_type n, const allocator_type& allocator = EASTL_BASIC_STRING_DEFAULT_ALLOCATOR);
         basic_string(CtorSprintf, const value_type* pFormat, ...);
@@ -752,6 +753,17 @@ namespace eastl
           mAllocator(x.mAllocator)
     {
         RangeInitialize(x.mpBegin, x.mpEnd);
+    }
+
+
+    template <typename T, typename Allocator>
+    inline basic_string<T, Allocator>::basic_string(this_type&& x)
+        : mpBegin(NULL),
+          mpEnd(NULL),
+          mpCapacity(NULL),
+          mAllocator(x.mAllocator)
+    {
+        swap(x);
     }
 
 
