@@ -355,7 +355,7 @@ namespace eastl
             }
         #else
             for(; first != last; ++first, ++currentDest)
-                ::new(&*currentDest) value_type(*first);
+				swap(*currentDest, *first);
         #endif
 
         return currentDest;

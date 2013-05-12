@@ -505,9 +505,9 @@ namespace eastl
     template <typename T>
     inline void swap(T& a, T& b)
     {
-        T temp(a);
-        a = b;
-        b = temp;
+        T temp = static_cast<T&&>(a);
+        a = static_cast<T&&>(b);
+        b = static_cast<T&&>(temp);
     }
 
 

@@ -380,6 +380,7 @@ namespace eastl
         void DoInsertValues(iterator position, size_type n, const value_type& value);
 
         void DoInsertValue(iterator position, const value_type& value);
+        void DoInsertValue(iterator position, value_type&& value);
 
     }; // class vector
 
@@ -581,9 +582,9 @@ namespace eastl
     inline void vector<T, Allocator>::push_back(T&& value)
 	{
         if(mpEnd < mpCapacity)
-            ::new(mpEnd++) value_type(value);
+			::new(mpEnd++) value_type(std::forward<T>(value));
         else // Note that in this case we create a temporary, which is less desirable.
-            DoInsertValue(mpEnd, value);
+            DoInsertValue(mpEnd, std::forward<T>(value));
     }
 
 #  ifdef EA_COMPILER_HAS_VARIADIC_TEMPLATES
@@ -1531,6 +1532,60 @@ namespace eastl
         }
     }
 
+    template <typename T, typename Allocator>
+    void vector<T, Allocator>::DoInsertValue(iterator position, value_type&& value)
+    {
+#if EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
+                EASTL_FAIL_MSG("vector::insert -- invalid position");
+#endif
+
+        if(mpEnd != mpCapacity) // If size < capacity ...
+        {
+            // EASTL_ASSERT(position < mpEnd); // We don't call this function unless position is less than end, and the code directly below relies on this.
+            // We need to take into account the possibility that value may come from within the vector itself.
+            const T* pValue = &value;
+            if((pValue >= position) && (pValue < mpEnd)) // If value comes from within the range to be moved...
+                ++pValue;
+            ::new(mpEnd) value_type(std::forward<T>(*(mpEnd - 1)));
+            eastl::copy_backward(position, mpEnd - 1, mpEnd); // We need copy_backward because of potential overlap issues.
+            *position = *pValue;
+            ++mpEnd;
+        }
+        else // else (size == capacity)
+        {
+            const size_type nPrevSize = size_type(mpEnd - mpBegin);
+            const size_type nNewSize  = GetNewCapacity(nPrevSize);
+            pointer const   pNewData  = DoAllocate(nNewSize);
+
+#if EASTL_EXCEPTIONS_ENABLED
+                pointer pNewEnd = pNewData;
+                try
+                {
+                    pNewEnd = eastl::uninitialized_copy_ptr(mpBegin, position, pNewData);
+                    ::new(pNewEnd) value_type(value);
+                    pNewEnd = eastl::uninitialized_copy_ptr(position, mpEnd, ++pNewEnd);
+                }
+                catch(...)
+                {
+                    DoDestroyValues(pNewData, pNewEnd);
+                    DoFree(pNewData, nNewSize);
+                    throw;
+                }
+#else
+                pointer pNewEnd = eastl::uninitialized_copy_ptr(mpBegin, position, pNewData);
+                ::new(pNewEnd) value_type(std::forward<T>(value));
+                pNewEnd = eastl::uninitialized_copy_ptr(position, mpEnd, ++pNewEnd);
+#endif
+
+            DoDestroyValues(mpBegin, mpEnd);
+            DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
+
+            mpBegin    = pNewData;
+            mpEnd      = pNewEnd;
+            mpCapacity = pNewData + nNewSize;
+        }
+    }
 
     template <typename T, typename Allocator>
     inline bool vector<T, Allocator>::validate() const
