@@ -355,7 +355,7 @@ namespace eastl
             }
         #else
             for(; first != last; ++first, ++currentDest)
-                ::new(&*currentDest) value_type(std::forward<InputIterator::value_type>(*first));
+                ::new(&*currentDest) value_type(std::forward<typename InputIterator::value_type>(*first));
         #endif
 
         return currentDest;
