@@ -1,17 +1,15 @@
 language: cpp
-compiler:
-  - clang
-  - gcc
 before_script:
   - cmake -D CMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
 script: make
 after_script:
   - make test
 env:
+  global:
+    - CXX11_FLAGS="-std=c++11 f-DEA_COMPILER_HAS_MOVE_SEMANTICS -DEA_COMPILER_HAS_VARIADIC_TEMPLATES"
+    - CMAKE_BUILD_TYPE=DEBUG # RELEASE
   matrix:
-    - CMAKE_BUILD_TYPE=DEBUG
-    - CMAKE_BUILD_TYPE=RELEASE
-notifications:
-  email:
-    on_success: always
-    on_failure: always
+    - CXX="g++"
+    - CXX="g++ $CXX11_FLAGS"
+    - CXX="clang++"
+    - CXX="clang++ $CXX11_FLAGS"
