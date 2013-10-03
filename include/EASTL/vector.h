@@ -380,7 +380,9 @@ namespace eastl
         void DoInsertValues(iterator position, size_type n, const value_type& value);
 
         void DoInsertValue(iterator position, const value_type& value);
+#ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
         void DoInsertValue(iterator position, value_type&& value);
+#endif
 
     }; // class vector
 
@@ -1532,6 +1534,7 @@ namespace eastl
         }
     }
 
+#ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
     template <typename T, typename Allocator>
     void vector<T, Allocator>::DoInsertValue(iterator position, value_type&& value)
     {
@@ -1586,6 +1589,7 @@ namespace eastl
             mpCapacity = pNewData + nNewSize;
         }
     }
+#endif
 
     template <typename T, typename Allocator>
     inline bool vector<T, Allocator>::validate() const
