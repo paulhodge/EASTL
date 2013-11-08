@@ -25,7 +25,6 @@ include_directories(${EASTL_INCLUDE_DIR})
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src LIB_SRCS)
 add_library(${PROJECT_NAME} STATIC ${LIB_SRCS})
 
-
 # test
 enable_testing()
 

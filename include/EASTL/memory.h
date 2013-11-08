@@ -355,7 +355,11 @@ namespace eastl
             }
         #else
             for(; first != last; ++first, ++currentDest)
+#ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
                 ::new(&*currentDest) value_type(std::forward<typename InputIterator::value_type>(*first));
+#else
+                ::new(&*currentDest) value_type(*first);
+#endif
         #endif
 
         return currentDest;

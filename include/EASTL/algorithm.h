@@ -505,9 +505,15 @@ namespace eastl
     template <typename T>
     inline void swap(T& a, T& b)
     {
+#ifdef EA_COMPILER_HAS_MOVE_SEMANTICS
         T temp = std::move(a);
         a = std::move(b);
         b = std::move(temp);
+#else
+        T temp(a);
+        a = b;
+        b = temp;
+#endif
     }
 
 
