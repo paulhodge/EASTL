@@ -135,11 +135,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>              // snprintf, etc.
 #include <ctype.h>              // toupper, etc.
 #include <wchar.h>              // toupper, etc.
-#ifdef __MWERKS__
-    #include <../Include/string.h> // Force the compiler to use the std lib header.
-#else
     #include <string.h> // strlen, etc.
-#endif
 #ifdef _MSC_VER
     #pragma warning(pop)
 #endif
@@ -2151,40 +2147,6 @@ namespace eastl
     }
 
 
-    #if defined(EA_PLATFORM_XENON) // If XBox 360...
-       
-        template <typename T, typename Allocator>
-        typename basic_string<T, Allocator>::size_type
-        basic_string<T, Allocator>::find(const value_type* p, size_type position, size_type n) const
-        {
-            const size_type nLength = (size_type)(mpEnd - mpBegin);
-
-            if(n || (position > nLength))
-            {
-                if(position < nLength)
-                {
-                    size_type nRemain = nLength - position;
-
-                    if(n <= nRemain)
-                    {
-                        nRemain -= (n - 1);
-
-                        for(const value_type* p1, *p2 = mpBegin + position;
-                            (p1 = Find(p2, *p, nRemain)) != 0;
-                            nRemain -= (p1 - p2) + 1, p2 = (p1 + 1))
-                        {
-                            if(Compare(p1, p, n) == 0)
-                                return (size_type)(p1 - mpBegin);
-                        }
-                    }
-                }
-
-                return npos;
-            }
-
-            return position;
-        }
-    #else
         template <typename T, typename Allocator>
         typename basic_string<T, Allocator>::size_type
         basic_string<T, Allocator>::find(const value_type* p, size_type position, size_type n) const
@@ -2205,7 +2167,6 @@ namespace eastl
             }
             return npos;
         }
-    #endif
 
 
     template <typename T, typename Allocator>
@@ -2317,24 +2278,6 @@ namespace eastl
     }
 
 
-    #if defined(EA_PLATFORM_XENON) // If XBox 360...
-        
-        template <typename T, typename Allocator>
-        typename basic_string<T, Allocator>::size_type
-        basic_string<T, Allocator>::find_first_of(const value_type* p, size_type position, size_type n) const
-        {
-            // If position is >= size, we return npos.
-            if(n && (position < (size_type)(mpEnd - mpBegin)))
-            {
-                for(const value_type* p1 = (mpBegin + position); p1 < mpEnd; ++p1)
-                {
-                    if(Find(p, *p1, n) != 0)
-                        return (size_type)(p1 - mpBegin);
-                }
-            }
-            return npos;
-        }
-    #else
         template <typename T, typename Allocator>
         typename basic_string<T, Allocator>::size_type
         basic_string<T, Allocator>::find_first_of(const value_type* p, size_type position, size_type n) const
@@ -2350,7 +2293,6 @@ namespace eastl
             }
             return npos;
         }
-    #endif
 
 
     template <typename T, typename Allocator>
@@ -2377,37 +2319,6 @@ namespace eastl
     }
 
 
-    #if defined(EA_PLATFORM_XENON) // If XBox 360...
-       
-        template <typename T, typename Allocator>
-        typename basic_string<T, Allocator>::size_type
-        basic_string<T, Allocator>::find_last_of(const value_type* p, size_type position, size_type n) const
-        {
-            // If n is zero or position is >= size, we return npos.
-            const size_type nLength = (size_type)(mpEnd - mpBegin);
-
-            if(n && nLength)
-            {
-                const value_type* p1;
-
-                if(position < nLength)
-                    p1 = mpBegin + position;
-                else
-                    p1 = mpEnd - 1;
-
-                for(;;)
-                {
-                    if(Find(p, *p1, n))
-                        return (size_type)(p1 - mpBegin);
-
-                    if(p1-- == mpBegin)
-                        break;
-                }
-            }
-
-            return npos;
-        }
-    #else
         template <typename T, typename Allocator>
         typename basic_string<T, Allocator>::size_type
         basic_string<T, Allocator>::find_last_of(const value_type* p, size_type position, size_type n) const
@@ -2425,7 +2336,6 @@ namespace eastl
             }
             return npos;
         }
-    #endif
 
 
     template <typename T, typename Allocator>
@@ -2685,8 +2595,8 @@ namespace eastl
     inline basic_string<T, Allocator> basic_string<T, Allocator>::right(size_type n) const
     {
         const size_type nLength = length();
-        if(n < nLength)
-            return substr(nLength - n, n);
+		if(n < nLength)
+			return substr(nLength - n, n); 
         return *this;
     }
 

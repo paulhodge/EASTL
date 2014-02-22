@@ -116,11 +116,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(push, 0)
 #endif
 #include <stddef.h>
-#ifdef __MWERKS__
-    #include <../Include/string.h> // Force the compiler to use the std lib header.
-#else
     #include <string.h> // memcpy, memcmp, memmove
-#endif
 #ifdef _MSC_VER
     #pragma warning(pop)
 #endif
@@ -1039,7 +1035,7 @@ namespace eastl
         memset(first, (unsigned char)c, (size_t)(last - first));
     }
 
-    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__SNC__) || defined(__ICL) || defined(__PPU__) || defined(__SPU__) // SN = SN compiler, ICL = Intel compiler, PPU == PS3 processor, SPU = PS3 cell processor
+    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(CS_UNDEFINED_STRING) || defined(__ICL) || defined(CS_UNDEFINED_STRING) || defined(CS_UNDEFINED_STRING) // SN = SN compiler, ICL = Intel compiler
         inline void fill(bool* first, bool* last, const bool& b)
         {
             memset(first, (char)b, (size_t)(last - first));
@@ -1119,7 +1115,7 @@ namespace eastl
         return (signed char*)memset(first, (signed char)c, n) + (size_t)n;
     }
 
-    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__SNC__) || defined(__ICL) || defined(__PPU__) || defined(__SPU__) // SN = SN compiler, ICL = Intel compiler, PU == PS3 processor, SPU = PS3 cell processor
+    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(CS_UNDEFINED_STRING) || defined(__ICL) || defined(CS_UNDEFINED_STRING) || defined(CS_UNDEFINED_STRING) // SN = SN compiler, ICL = Intel compiler
         template <typename Size>
         inline bool* fill_n(bool* first, Size n, const bool& b)
         {

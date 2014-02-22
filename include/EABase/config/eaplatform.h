@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009, 2013 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -34,10 +34,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *-----------------------------------------------------------------------------
  * Currently supported platform indentification defines include:
- *    EA_PLATFORM_PS3
- *    EA_PLATFORM_PS3_PPU
- *    EA_PLATFORM_PS3_SPU
- *    EA_PLATFORM_XENON (a.k.a. XBox2)
  *    EA_PLATFORM_MAC
  *    EA_PLATFORM_OSX
  *    EA_PLATFORM_LINUX
@@ -84,69 +80,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #define EA_PLATFORM_DESKTOP
 #endif
 
-// PlayStation 3 PPU (Primary Processing Unit)
-#if defined(EA_PLATFORM_PS3_PPU) || defined(EA_PLATFORM_PS3) || defined(__PU__) || defined(__PPU__)
-    #undef  EA_PLATFORM_PS3_PPU
-    #define EA_PLATFORM_PS3_PPU 1
-    #undef  EA_PLATFORM_PS3
-    #define EA_PLATFORM_PS3 1
-    #define EA_PLATFORM_NAME "PS3"
-    #define EA_PROCESSOR_POWERPC
-    #define EA_PROCESSOR_POWERPC_64
-    #define EA_SYSTEM_BIG_ENDIAN
-    #define EA_PLATFORM_DESCRIPTION "PS3 on PowerPC"
-    #define EA_PLATFORM_CONSOLE
-
-// PlayStation 3 SPU (Synergistic Processing Unit)
-#elif defined(EA_PLATFORM_PS3_SPU) || defined(__SPU__)
-    #undef  EA_PLATFORM_PS3_SPU
-    #define EA_PLATFORM_PS3_SPU 1
-    #define EA_PLATFORM_NAME "PS3 SPU"
-    #define EA_PROCESSOR_SPU
-    #define EA_SYSTEM_BIG_ENDIAN
-    #define EA_PLATFORM_DESCRIPTION "PS3 SPU on SPU"
-    #define EA_PLATFORM_CONSOLE
-
-// XBox
-// _XBOX is defined by the VC++ project, not the compiler. There is no way
-// to tell if the compiler is compiling for XBox unless _XBOX is #defined 
-// in the project files or otherwise. _M_IX86 is the VC++ way of detecting 
-// an x86 target, which would mean XBox and not Xenon (a.k.a. XBox2).
-#elif defined(EA_PLATFORM_XBOX) || (defined(_XBOX) && defined(_M_IX86))
-    #undef  EA_PLATFORM_XBOX
-    #define EA_PLATFORM_XBOX 1
-    #define EA_PLATFORM_NAME "XBox"
-    #define EA_PROCESSOR_X86
-    #define EA_SYSTEM_LITTLE_ENDIAN
-    #define EA_PLATFORM_DESCRIPTION "XBox on X86"
-    #if defined(_MSC_VER) || defined(__ICL)
-       #define EA_ASM_STYLE_INTEL
-    #endif
-    #define EA_PLATFORM_CONSOLE
-
-// Xenon (XBox 360)
-// The Xenon compiler doesn't define anything in particular to indicate that the 
-// target is the Xenon platform. The Xenon SDK, however, expects that XBOX and
-// _XBOX are #defined, so the project build file must make sure these are defined.
-// Since the Xenon compiler in fact defines _M_PPC, we can use this information 
-// to infer that Xenon is the target if neither _XENON nor _XBOX2 are specifically 
-// defined by the project build file.
-#elif defined(EA_PLATFORM_XENON) || defined(_XENON) || defined(_XBOX2) || ((defined(_XBOX) || defined(XBOX)) && defined(_M_PPC))
-    #undef  EA_PLATFORM_XENON
-    #define EA_PLATFORM_XENON 1
-    #define EA_PLATFORM_NAME "Xenon"
-    #define EA_PROCESSOR_POWERPC
-    #define EA_PROCESSOR_POWERPC_64
-    #define EA_SYSTEM_BIG_ENDIAN
-    #define EA_PLATFORM_DESCRIPTION "Xenon on PowerPC"
-    #if defined(_MSC_VER) || defined(__ICL)
-       #define EA_ASM_STYLE_INTEL
-    #endif
-    #define EA_PLATFORM_CONSOLE
-    #define EA_PLATFORM_MICROSOFT 1
-
-// Larrabee                                           // This part to be removed once __LRB__ is supported by the Larrabee compiler in 2009.
-#elif defined(EA_PLATFORM_LRB) || defined(__LRB__) || (defined(__EDG__) && defined(__ICC) && defined(__x86_64__))
+#if   defined(EA_PLATFORM_LRB) || defined(__LRB__) || (defined(__EDG__) && defined(__ICC) && defined(__x86_64__))
     #undef  EA_PLATFORM_LRB
     #define EA_PLATFORM_LRB         1
     #define EA_PLATFORM_NAME        "Larrabee"
@@ -164,93 +98,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #define EA_PLATFORM_DESKTOP
 
 // Android (Google phone OS)
-#elif defined(EA_PLATFORM_ANDROID) || defined(__ANDROID__)
-    #undef  EA_PLATFORM_ANDROID
-    #define EA_PLATFORM_ANDROID 1
-    #define EA_PLATFORM_LINUX 1
-    #define EA_PLATFORM_UNIX 1
-    #define EA_PLATFORM_NAME "Android"
-    #define EA_ASM_STYLE_ATT
-    #if defined(__arm__)
-        #define EA_PROCESSOR_ARM
-        #define EA_PLATFORM_DESCRIPTION "Android on ARM"
-    #else
-        #error Unknown processor
-    #endif
-    #if !defined(EA_SYSTEM_BIG_ENDIAN) && !defined(EA_SYSTEM_LITTLE_ENDIAN)
-        #define EA_SYSTEM_LITTLE_ENDIAN
-    #endif
-    #define EA_PLATFORM_MOBILE
-
-// Palm OS for Mobile (Linux variant)
-#elif defined(EA_PLATFORM_PALM)
-    #undef  EA_PLATFORM_PALM
-    #define EA_PLATFORM_PALM 1
-    #define EA_PLATFORM_LINUX 1
-    #define EA_PLATFORM_UNIX 1
-    #define EA_PLATFORM_NAME "Palm"
-    #define EA_POSIX_THREADS_AVAILABLE 1
-    #define EA_ASM_STYLE_ATT
-    #if defined(__arm__)
-        #define EA_PROCESSOR_ARM
-        #define EA_PLATFORM_DESCRIPTION "Palm on ARM"
-    #else
-        #error Unknown processor
-    #endif
-    #if !defined(EA_SYSTEM_BIG_ENDIAN) && !defined(EA_SYSTEM_LITTLE_ENDIAN)
-        #define EA_SYSTEM_LITTLE_ENDIAN
-    #endif
-    #define EA_PLATFORM_MOBILE
-
-// Airplay
-#elif defined(EA_PLATFORM_AIRPLAY) || defined(__S3E__)
-    #undef  EA_PLATFORM_AIRPLAY
-    #define EA_PLATFORM_AIRPLAY
-    #define EA_PLATFORM_NAME "Airplay"
-    #if defined(__arm__)
-        #define EA_PROCESSOR_ARM
-        #define EA_PLATFORM_DESCRIPTION "Airplay on ARM"
-        #define EA_ASM_STYLE_ATT
-        #undef _MSC_VER    
-    #elif defined(_M_IX86)
-        #define EA_PROCESSOR_X86
-        #define EA_PLATFORM_DESCRIPTION "Airplay on x86"
-        #define EA_ASM_STYLE_INTEL
-    #else
-        #error Unknown processor
-    #endif
-    #if !defined(EA_SYSTEM_BIG_ENDIAN) && !defined(EA_SYSTEM_LITTLE_ENDIAN)
-        #if defined(HAVE_BIG_ENDIAN) || (defined(__BYTE_ORDER) && defined(__BIG_ENDIAN) && (__BYTE_ORDER == __BIG_ENDIAN)))
-            #define EA_SYSTEM_BIG_ENDIAN
-        #else
-            #define EA_SYSTEM_LITTLE_ENDIAN
-        #endif
-    #endif
-    #define EA_PLATFORM_MOBILE
-
-// Samsung Bada OS for Mobile (Linux variant)
-#elif defined(EA_PLATFORM_BADA)
-    #undef  EA_PLATFORM_BADA
-    #define EA_PLATFORM_BADA 1
-  //#define EA_PLATFORM_LINUX 1     // The underlying OS is Linux, but the app mostly doesn't see this.
-  //#define EA_PLATFORM_UNIX 1
-    #define EA_PLATFORM_NAME "bada"
-    #define EA_ASM_STYLE_ATT
-    #if defined(__arm__)
-        #define EA_PROCESSOR_ARM
-        #define EA_PLATFORM_DESCRIPTION "bada on ARM"
-    #elif defined(__i386__)
-        #define EA_PLATFORM_BADA_SIMULATOR
-        #define EA_PROCESSOR_X86
-        #define EA_PLATFORM_DESCRIPTION "bada simulator on x86"
-    #else
-        #error Unknown processor
-    #endif
-    #if !defined(EA_SYSTEM_BIG_ENDIAN) && !defined(EA_SYSTEM_LITTLE_ENDIAN)
-        #define EA_SYSTEM_LITTLE_ENDIAN
-    #endif
-    #define EA_PLATFORM_MOBILE
-
 #elif defined(__APPLE__) && __APPLE__ 
     #include <TargetConditionals.h>
 
@@ -259,25 +106,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     
     // iPhone 
     // TARGET_OS_IPHONE will be undefined on an unknown compiler, and will be defined on gcc.
-    #if defined(EA_PLATFORM_IPHONE) || defined(__IPHONE__) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || (defined(TARGET_IPHONE_SIMULATOR) && TARGET_IPHONE_SIMULATOR)
-        #undef  EA_PLATFORM_IPHONE
-        #define EA_PLATFORM_IPHONE 1
+    #if defined(CS_UNDEFINED_STRING) || defined(__IPHONE__) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE) || (defined(TARGET_IPHONE_SIMULATOR) && TARGET_IPHONE_SIMULATOR)
+        #undef  CS_UNDEFINED_STRING
+        #define CS_UNDEFINED_STRING 1
         #define EA_PLATFORM_NAME "iPhone"
         #define EA_ASM_STYLE_ATT
         #define EA_POSIX_THREADS_AVAILABLE 1
         #if defined(__arm__)
-            #define EA_PROCESSOR_ARM
+            #define CS_UNDEFINED_STRING
             #define EA_SYSTEM_LITTLE_ENDIAN
             #define EA_PLATFORM_DESCRIPTION "iPhone on ARM"
         #elif defined(__i386__)
-            #define EA_PLATFORM_IPHONE_SIMULATOR
+            #define CS_UNDEFINED_STRING
             #define EA_PROCESSOR_X86
             #define EA_SYSTEM_LITTLE_ENDIAN
             #define EA_PLATFORM_DESCRIPTION "iPhone simulator on x86"
         #else
             #error Unknown processor
         #endif
-        #define EA_PLATFORM_MOBILE
+        #define CS_UNDEFINED_STRING
 
     // Macintosh OSX
     // TARGET_OS_MAC is defined by the Metrowerks and older AppleC compilers.
@@ -300,7 +147,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_SYSTEM_LITTLE_ENDIAN
             #define EA_PLATFORM_DESCRIPTION "OSX on x86-64"
         #elif defined(__arm__)
-            #define EA_PROCESSOR_ARM
+            #define CS_UNDEFINED_STRING
             #define EA_SYSTEM_LITTLE_ENDIAN
             #define EA_PLATFORM_DESCRIPTION "OSX on ARM"
         #elif defined(__POWERPC64__) || defined(__powerpc64__)
@@ -334,9 +181,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // _M_IX86 is defined by the Borland compiler.
 // __sparc__ is defined by the GCC compiler.
 // __powerpc__ is defined by the GCC compiler.
-#elif defined(EA_PLATFORM_LINUX) || (defined(__linux) || defined(__linux__))
-    #undef  EA_PLATFORM_LINUX
-    #define EA_PLATFORM_LINUX 1
+#elif defined(CS_UNDEFINED_STRING) || (defined(__linux) || defined(__linux__))
+    #undef  CS_UNDEFINED_STRING
+    #define CS_UNDEFINED_STRING 1
     #define EA_PLATFORM_UNIX 1
     #define EA_PLATFORM_NAME "Linux"
     #if defined(__i386__) || defined(__intel__) || defined(_M_IX86)
@@ -374,7 +221,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #define EA_ASM_STYLE_INTEL
     #define EA_SYSTEM_LITTLE_ENDIAN
     #if defined(_M_ARM) // Also there is _M_ARMT
-        #define EA_PROCESSOR_ARM
+        #define CS_UNDEFINED_STRING
         #define EA_PLATFORM_DESCRIPTION "Windows CE on ARM"
     #elif defined(_M_IX86)
         #define EA_PROCESSOR_X86
@@ -382,7 +229,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #else //Possibly other Windows CE variants
         #error Unknown processor
     #endif
-    #define EA_PLATFORM_MOBILE
+    #define CS_UNDEFINED_STRING
 
 // Windows
 // _WIN32 is defined by the VC++, Intel and GCC compilers.
@@ -392,7 +239,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // _M_IX86, _M_AMD64 and _M_IA64 are defined by the VC++, Intel, and Borland compilers.
 // _X86_, _AMD64_, and _IA64_ are defined by the Metrowerks compiler.
 // _M_ARM is defined by the VC++ compiler.
-#elif (defined(EA_PLATFORM_WINDOWS) || (defined(_WIN32) || defined(__WIN32__) || defined(_WIN64) || (defined(__MWERKS__) && defined(_X86_)))) && !defined(_XBOX)
+#elif (defined(EA_PLATFORM_WINDOWS) || (defined(_WIN32) || defined(__WIN32__) || defined(_WIN64) || (defined(CS_UNDEFINED_STRING) && defined(_X86_)))) && !defined(CS_UNDEFINED_STRING)
     #undef  EA_PLATFORM_WINDOWS
     #define EA_PLATFORM_WINDOWS 1
     #define EA_PLATFORM_NAME "Windows"
@@ -414,7 +261,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define EA_SYSTEM_LITTLE_ENDIAN
         #define EA_PLATFORM_DESCRIPTION "Windows on IA-64"
     #elif defined(_M_ARM)
-        #define EA_PROCESSOR_ARM
+        #define CS_UNDEFINED_STRING
         #define EA_SYSTEM_LITTLE_ENDIAN
         #define EA_PLATFORM_DESCRIPTION "Windows CE on ARM"
     #else //Possibly other Windows CE variants
@@ -434,25 +281,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // __sun is defined by the GCC compiler.
 // __i386 is defined by the Sun and GCC compilers.
 // __sparc is defined by the Sun and GCC compilers.
-#elif defined(EA_PLATFORM_SUN) || (defined(__SUNPRO_CC) || defined(__sun))
-    #undef  EA_PLATFORM_SUN
-    #define EA_PLATFORM_SUN 1
-    #define EA_PLATFORM_UNIX 1
-    #define EA_PLATFORM_NAME "SUN"
-    #if defined(__i386)
-        #define EA_PROCESSOR_X86
-        #define EA_SYSTEM_LITTLE_ENDIAN
-        #define EA_PLATFORM_DESCRIPTION "SUN on x86"
-    #elif defined(__sparc)
-        #define EA_PROCESSOR_SPARC
-        #define EA_SYSTEM_BIG_ENDIAN
-        #define EA_PLATFORM_DESCRIPTION "SUN on Sparc"
-    #else
-        #error Unknown processor
-        #error Unknown endianness
-    #endif
-    #define EA_PLATFORM_DESKTOP
-
 #else
     #error Unknown platform
     #error Unknown processor
@@ -498,11 +326,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // have 64 bit registers but 32 bit pointers.
 //
 #ifndef EA_PLATFORM_WORD_SIZE
-   #if defined(EA_PLATFORM_XENON) || defined(EA_PLATFORM_PS3) 
-      #define EA_PLATFORM_WORD_SIZE 8
-   #else
       #define EA_PLATFORM_WORD_SIZE EA_PLATFORM_PTR_SIZE
-   #endif
 #endif
 
 
@@ -515,7 +339,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // we follow a variation of the standard LP64 conventions defined at:
 //    http://www.opengroup.org/public/tech/aspen/lp64_wp.htm 
 //
-// #if defined(EA_PLATFORM_LINUX) || defined(EA_PLATFORM_OSX) || defined(EA_PLATFORM_XBOX) || defined(EA_PLATFORM_XENON)
+// #if defined(EA_PLATFORM_LINUX) || defined(EA_PLATFORM_OSX)
 //    #define EA_PLATFORM_ILP32_LL64         // int, long, ptr = 32 bits; long long = 64 bits.
 // 
 // #elif defined(EA_PLATFORM_SUN) || defined(EA_PLATFORM_SGI)

@@ -149,9 +149,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // As of this writing (5/2005), type_traits here requires a well-conforming 
 // C++ compiler with respect to template metaprogramming. To use this library
 // you need to have at least one of the following:
-//     MSVC++ 7.1       (includes Win32, XBox 360, Win64, and WinCE platforms)
-//     GCC 3.2          (includes Playstation 3, and Linux platforms)
-//     Metrowerks 8.0   (incluees Playstation 3, Windows, and other platforms)
+//     MSVC++ 7.1       
+//     GCC 3.2          
+//     Metrowerks 8.0   
 //     SN Systems       (not the GCC 2.95-based compilers)
 //     EDG              (includes any compiler with EDG as a back-end, such as the Intel compiler)
 //     Comeau           (this is a C++ to C generator)

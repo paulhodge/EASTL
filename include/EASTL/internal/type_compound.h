@@ -262,11 +262,7 @@ namespace eastl
     // distinguish between unions and classes. As a result, is_class
     // will erroneously evaluate to true for union types.
     ///////////////////////////////////////////////////////////////////////
-    #if defined(__MWERKS__)
-        // To do: Switch this to use msl_utility type traits.
-        template <typename T> 
-        struct is_class : public false_type{};
-    #elif !defined(__GNUC__) || (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) // Not GCC or GCC 3.4+
+    #if   !defined(__GNUC__) || (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) // Not GCC or GCC 3.4+
         template <typename U> static yes_type is_class_helper(void (U::*)());
         template <typename U> static no_type  is_class_helper(...);
 

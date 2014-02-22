@@ -60,11 +60,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(push, 0)
 #endif
 #include <stddef.h>
-#ifdef __MWERKS__
-    #include <../Include/string.h> // Force the compiler to use the std lib header.
-#else
     #include <string.h>
-#endif
 #ifdef _MSC_VER
     #pragma warning(pop)
 #endif
@@ -82,9 +78,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if defined(_MSC_VER)
     #pragma warning(push)
     #pragma warning(disable: 4127)  // Conditional expression is constant
-#elif defined(__SNC__)
-    #pragma control %push diag
-    #pragma diag_suppress=187       // Pointless comparison of unsigned integer with zero
 #endif
 
 
@@ -638,7 +631,7 @@ namespace eastl
 
         for(size_t i = 0; i < NW; i++)
         {
-            #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) && !defined(EA_PLATFORM_ANDROID) // GCC 3.4 or later
+            #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(CS_UNDEFINED_STRING) && !defined(CS_UNDEFINED_STRING) // GCC 3.4 or later
                 #if(EA_PLATFORM_WORD_SIZE == 4)
                     n += (size_type)__builtin_popcountl(mWord[i]);
                 #else
@@ -960,7 +953,7 @@ namespace eastl
     inline BitsetBase<1>::size_type
     BitsetBase<1>::count() const
     {
-        #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) && !defined(EA_PLATFORM_ANDROID) // GCC 3.4 or later
+        #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(CS_UNDEFINED_STRING) && !defined(CS_UNDEFINED_STRING) // GCC 3.4 or later
             #if(EA_PLATFORM_WORD_SIZE == 4)
                 return (size_type)__builtin_popcountl(mWord[0]);
             #else
@@ -1162,7 +1155,7 @@ namespace eastl
     inline BitsetBase<2>::size_type
     BitsetBase<2>::count() const
     {
-        #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(__SNC__) && !defined(EA_PLATFORM_ANDROID) // GCC 3.4 or later
+        #if defined(__GNUC__) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 304) && !defined(CS_UNDEFINED_STRING) && !defined(CS_UNDEFINED_STRING) // GCC 3.4 or later
             #if(EA_PLATFORM_WORD_SIZE == 4)
                 return (size_type)__builtin_popcountl(mWord[0])  + (size_type)__builtin_popcountl(mWord[1]);
             #else
@@ -1757,8 +1750,6 @@ namespace eastl
 
 #if defined(_MSC_VER)
     #pragma warning(pop)
-#elif defined(__SNC__)
-    #pragma control %pop diag
 #endif
 
 

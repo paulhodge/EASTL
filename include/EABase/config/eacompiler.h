@@ -174,43 +174,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     // SN
-    #if defined(__SNC__) // SN Systems compiler 
-        // Note that there are two versions of the SN compiler, one that is 
-        // GNUC-based and a newer one which is based on an EDG (Edison Design
-        // Group) front-end with a back-end code generator made by SN.
-        // The EDG-based SN compiler uses "GCC compatibility mode" and thus
-        // defines __GNUC__ but isn't really GNUC. Also, as of this writing
-        // it appears that the SN compiler may arrive with MSVC-compatibility
-        // mode in addition as well. Thus, we define EA_COMPILER_SN
-        // separately from other EA_COMPILER defines it is possible that both 
-        // may be defined at the same time. Note that while the newer EDG-based
-        // SN compiler may emulate other compilers, it doesn't act exactly 
-        // the same.
-        #define EA_COMPILER_SN
-    #endif
 
 
     // Airplay SDK (third party mobile middleware compiler)
-    #if defined(__S3E__)
-        #define EA_COMPILER_NO_EXCEPTION_STD_NAMESPACE
-    #endif
 
 
     // SNC (SN Systems)
-    #if defined(__SNC__)
-         #define EA_COMPILER_NAME "SNC"
-
-        #ifdef __GNUC__ // If SN is using GCC-compatibility mode (which it usually is)...
-             #define EA_COMPILER_GNUC
-             #define EA_COMPILER_VERSION     (__GNUC__ * 1000 + __GNUC_MINOR__)  // We intentionally report the GCC version here. SN 
-             #define EA_COMPILER_STRING      EA_COMPILER_NAME " compiler, GCC version " INTERNAL_STRINGIZE( __GNUC__ ) "." INTERNAL_STRINGIZE( __GNUC_MINOR__ ) ", SNC version " INTERNAL_STRINGIZE( __SN_VER__ )  ", EDG version " INTERNAL_STRINGIZE( __EDG_VERSION__ )
-        #else
-             #define EA_COMPILER_VERSION     __SN_VER__
-             #define EA_COMPILER_STRING      EA_COMPILER_NAME " compiler, version " INTERNAL_STRINGIZE( EA_COMPILER_VERSION ) ", EDG version " INTERNAL_STRINGIZE( __EDG_VERSION__ )
-        #endif
-
-    // GCC (a.k.a. GNUC)
-    #elif defined(__GNUC__) // GCC compilers exist for many platforms.
+    #if   defined(__GNUC__) // GCC compilers exist for many platforms.
         #define EA_COMPILER_GNUC
         #define EA_COMPILER_VERSION (__GNUC__ * 1000 + __GNUC_MINOR__)
         #define EA_COMPILER_NAME "GCC"
@@ -257,26 +227,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
     // Metrowerks
-    #elif defined(__MWERKS__) || defined(__CWCC__) // Metrowerks compilers exist for many platforms.
-        #define EA_COMPILER_METROWERKS
-        #ifdef __MWERKS__
-            #define EA_COMPILER_VERSION __MWERKS__
-        #else
-            #define EA_COMPILER_VERSION __CWCC__
-        #endif
-        #define EA_COMPILER_NAME "Metrowerks"
-      //#define EA_COMPILER_STRING (defined below)
-
-        #if (__MWERKS__ <= 0x2407)  // If less than v7.x...
-            #define EA_COMPILER_NO_MEMBER_FUNCTION_SPECIALIZATION
-        #endif
-        #if (__MWERKS__ <= 0x3003)  // If less than v8.x...
-            #define EA_COMPILER_NO_MEMBER_TEMPLATE_FRIENDS
-        #endif
-
-
-    // Microsoft VC++
-    #elif defined(_MSC_VER) && !(defined(__S3E__) && defined(__arm__)) // S3E is a mobile SDK which mistakenly masquerades as VC++ on ARM.
+    #elif defined(_MSC_VER) && !(defined(CS_UNDEFINED_STRING) && defined(__arm__)) // S3E is a mobile SDK which mistakenly masquerades as VC++ on ARM.
         #define EA_COMPILER_MSVC
         #define EA_COMPILER_VERSION _MSC_VER
         #define EA_COMPILER_NAME "Microsoft Visual C++"
@@ -386,16 +337,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // If EA_COMPILER_NO_RTTI is defined, then RTTI (run-time type information)
     // is not available (possibly due to being disabled by the user).
     //
-    #if defined(__SNC__) && !defined(__RTTI)
-        #define EA_COMPILER_NO_RTTI
-    #elif defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
+    #if   defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
         #define EA_COMPILER_NO_RTTI
     #elif defined(_MSC_VER) && !defined(_CPPRTTI)
         #define EA_COMPILER_NO_RTTI
-    #elif defined(__MWERKS__)
-        #if !__option(RTTI)
-            #define EA_COMPILER_NO_RTTI
-        #endif
     #endif
 
 
@@ -414,24 +359,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // systems of which some enable exception handling while others
     // don't, check for EA_COMPILER_NO_EXCEPTIONS being defined. 
     //
-    #if defined(EA_COMPILER_GNUC) && defined(_NO_EX) // GCC on some platforms (e.g. PS3) defines _NO_EX when exceptions are disabled.
+    #if defined(EA_COMPILER_GNUC) && defined(_NO_EX) // GCC on some platforms defines _NO_EX when exceptions are disabled.
         #define EA_COMPILER_NO_EXCEPTIONS
 
-    #elif (defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_INTEL) || defined(EA_COMPILER_SN)) && !defined(__EXCEPTIONS) // GCC and most EDG-based compilers define __EXCEPTIONS when exception handling is enabled.
+    #elif (defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_INTEL) || defined(CS_UNDEFINED_STRING)) && !defined(__EXCEPTIONS) // GCC and most EDG-based compilers define __EXCEPTIONS when exception handling is enabled.
         #define EA_COMPILER_NO_EXCEPTIONS
 
-    #elif defined(EA_COMPILER_METROWERKS)
-        #if !__option(exceptions)
-            #define EA_COMPILER_NO_EXCEPTIONS
-        #endif
-
-    // Borland and Micrsoft use the _CPUUNWIND define to denote that 
-    // exception stack unwinding code generation is disabled. The result
-    // is that you can call try/catch/throw and that exceptions will be
-    // caught handled, but that no automatic object destruction will
-    // happen between a throw and the resulting catch. We thus don't 
-    // want to define EA_COMPILER_NO_EXCEPTIONS, but perhaps users might
-    // be interesting in knowing that unwinding is disabled.
     #elif (defined(EA_COMPILER_BORLAND) || defined(EA_COMPILER_MSVC)) && !defined(_CPPUNWIND)
         #define EA_COMPILER_NO_UNWIND
 
@@ -443,9 +376,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //
     // If defined, then the compiler doesn't provide a Standard C++ library.
     //
-    #if defined(EA_PLATFORM_ANDROID)
-        #define EA_COMPILER_NO_STANDARD_CPP_LIBRARY
-    #endif
 
 
     // EA_COMPILER_NO_STATIC_VARIABLE_INIT

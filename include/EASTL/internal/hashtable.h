@@ -1853,11 +1853,7 @@ namespace eastl
     {
         // We ignore the first argument (hint iterator). It's not likely to be useful for hashtable containers.
 
-        #ifdef __MWERKS__ // The Metrowerks compiler has a bug.
-            insert_return_type result = insert(value);
-            return result.first; // Note by Paul Pedriana while perusing this code: This code will fail to compile when bU is false (i.e. for multiset, multimap).
-
-        #elif defined(__GNUC__) && (__GNUC__ < 3) // If using old GCC (GCC 2.x has a bug which we work around)
+        #if   defined(__GNUC__) && (__GNUC__ < 3) // If using old GCC (GCC 2.x has a bug which we work around)
             EASTL_ASSERT(empty()); // This function cannot return the correct return value on GCC 2.x. Unless, that is, the container is empty.
             DoInsertValue(value, integral_constant<bool, bU>());
             return begin(); // This is the wrong answer.
@@ -1883,11 +1879,7 @@ namespace eastl
 
         for(; first != last; ++first)
         {
-            #ifdef __MWERKS__ // The Metrowerks compiler has a bug.
-                insert(*first);
-            #else
                 DoInsertValue(*first, integral_constant<bool, bU>());
-            #endif
         }
     }
 

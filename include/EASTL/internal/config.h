@@ -145,7 +145,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // of using EABase versions prior to the addition of its EA_PLATFORM_MICROSOFT support.
 //
 #if (EABASE_VERSION_N < 20022) && !defined(EA_PLATFORM_MICROSOFT)
-    #if defined(EA_PLATFORM_WINDOWS) || defined(EA_PLATFORM_XENON)
+    #if defined(EA_PLATFORM_WINDOWS) || defined(CS_UNDEFINED_STRING)
         #define EA_PLATFORM_MICROSOFT 1
     #endif
 #endif
@@ -159,9 +159,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // of using EABase versions prior to the addition of its EA_COMPILER_NO_STANDARD_CPP_LIBRARY support.
 //
 #if (EABASE_VERSION_N < 20022) && !defined(EA_COMPILER_NO_STANDARD_CPP_LIBRARY)
-    #if defined(EA_PLATFORM_ANDROID)
-        #define EA_COMPILER_NO_STANDARD_CPP_LIBRARY 1
-    #endif
 #endif
 
 
@@ -173,16 +170,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // of using EABase versions prior to the addition of its EA_COMPILER_NO_RTTI support.
 //
 #if (EABASE_VERSION_N < 20022) && !defined(EA_COMPILER_NO_RTTI)
-    #if defined(__SNC__) && !defined(__RTTI)
-        #define EA_COMPILER_NO_RTTI
-    #elif defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
+    #if   defined(__GXX_ABI_VERSION) && !defined(__GXX_RTTI)
         #define EA_COMPILER_NO_RTTI
     #elif defined(_MSC_VER) && !defined(_CPPRTTI)
         #define EA_COMPILER_NO_RTTI
-    #elif defined(__MWERKS__)
-        #if !__option(RTTI)
-            #define EA_COMPILER_NO_RTTI
-        #endif
     #endif
 #endif
 
@@ -509,8 +500,6 @@ namespace eastl
         #define EASTL_CT_ASSERT(expression)  typedef EASTL_CT_ASSERTION_TEST< sizeof(EASTL_CT_ASSERTION_FAILURE< (bool)(expression) >)> EASTL_CT_ASSERT_FAILURE
     #elif defined(__ICL) || defined(__ICC)
         #define EASTL_CT_ASSERT(expression)  typedef char EASTL_PREPROCESSOR_JOIN(EASTL_CT_ASSERT_FAILURE_, __LINE__) [EASTL_CT_ASSERTION_FAILURE< (bool)(expression) >::value]
-    #elif defined(__MWERKS__)
-        #define EASTL_CT_ASSERT(expression)  enum { EASTL_PREPROCESSOR_JOIN(EASTL_CT_ASSERT_FAILURE_, __LINE__) = sizeof(EASTL_CT_ASSERTION_FAILURE< (bool)(expression) >) }
     #else // GCC, etc.
         #define EASTL_CT_ASSERT(expression)  typedef EASTL_CT_ASSERTION_TEST< sizeof(EASTL_CT_ASSERTION_FAILURE< (bool)(expression) >)> EASTL_PREPROCESSOR_JOIN1(EASTL_CT_ASSERT_FAILURE_, __LINE__)
     #endif
@@ -536,12 +525,6 @@ namespace eastl
 #ifndef EASTL_DEBUG_BREAK
     #if defined(_MSC_VER) && (_MSC_VER >= 1300)
         #define EASTL_DEBUG_BREAK() __debugbreak()    // This is a compiler intrinsic which will map to appropriate inlined asm for the platform.
-    #elif defined(EA_PROCESSOR_MIPS)                  // 
-        #define EASTL_DEBUG_BREAK() asm("break")
-    #elif defined(__SNC__)
-        #define EASTL_DEBUG_BREAK() *(int*)(0) = 0
-    #elif defined(EA_PLATFORM_PS3)
-        #define EASTL_DEBUG_BREAK() asm volatile("tw 31,1,1")
     #elif defined(EA_PROCESSOR_POWERPC)               // Generic PowerPC. 
         #define EASTL_DEBUG_BREAK() asm(".long 0")    // This triggers an exception by executing opcode 0x00000000.
     #elif (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)) && defined(EA_ASM_STYLE_INTEL)
@@ -786,7 +769,7 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_VA_COPY_ENABLED
-    #if defined(__MWERKS__) || (defined(__GNUC__) && (__GNUC__ >= 3) && (!defined(__i386__) || defined(__x86_64__)) && !defined(__ppc__) && !defined(__PPC__) && !defined(__PPC64__))
+    #if defined(CS_UNDEFINED_STRING) || (defined(__GNUC__) && (__GNUC__ >= 3) && (!defined(__i386__) || defined(__x86_64__)) && !defined(__ppc__) && !defined(__PPC__) && !defined(__PPC64__))
         #define EASTL_VA_COPY_ENABLED 1
     #else
         #define EASTL_VA_COPY_ENABLED 0
@@ -802,7 +785,7 @@ namespace eastl
     // GCC with -fstrict-aliasing has bugs (or undocumented functionality in their 
     // __may_alias__ implementation. The compiler gets confused about function signatures.
     // VC8 (1400) doesn't need the proxy because it has built-in smart debugging capabilities.
-    #if defined(EASTL_DEBUG) && (!defined(__GNUC__) || defined(__SNC__)) && (!defined(_MSC_VER) || (_MSC_VER < 1400))
+    #if defined(EASTL_DEBUG) && (!defined(__GNUC__) || defined(CS_UNDEFINED_STRING)) && (!defined(_MSC_VER) || (_MSC_VER < 1400))
         #define EASTL_LIST_PROXY_ENABLED 1
         #define EASTL_LIST_PROXY_MAY_ALIAS EASTL_MAY_ALIAS
     #else
@@ -1023,9 +1006,7 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_ALIGN_OF
-    #if defined(__MWERKS__)
-          #define EASTL_ALIGN_OF(type) ((size_t)__alignof__(type))
-    #elif !defined(__GNUC__) || (__GNUC__ >= 3) // GCC 2.x doesn't do __alignof correctly all the time.
+    #if   !defined(__GNUC__) || (__GNUC__ >= 3) // GCC 2.x doesn't do __alignof correctly all the time.
         #define EASTL_ALIGN_OF __alignof
     #else
         #define EASTL_ALIGN_OF(type) ((size_t)offsetof(struct{ char c; type m; }, m))
@@ -1188,11 +1169,46 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
     #define EASTLAllocatorDefault eastl::GetDefaultAllocator
 #endif
 
-
-
-
-
-
+///////////////////////////////////////////////////////////////////////////////
+// EASTL_BITSET_WORD_TYPE_DEFAULT / EASTL_BITSET_WORD_SIZE_DEFAULT
+//
+// Defined as an integral power of two type, usually uint32_t or uint64_t.
+// Specifies the word type that bitset should use internally to implement
+// storage. By default this is the platform register word size, but there 
+// may be reasons to use a different value.
+//
+// Defines the integral data type used by bitset by default.
+// You can override this default on a bitset-by-bitset case by supplying a 
+// custom bitset WordType template parameter. 
+//
+// The C++ standard specifies that the std::bitset word type be unsigned long, 
+// but that isn't necessarily the most efficient data type for the given platform.
+// We can follow the standard and be potentially less efficient or we can do what
+// is more efficient but less like the C++ std::bitset.
+//
+#if !defined(EASTL_BITSET_WORD_TYPE_DEFAULT)
+#if defined(EASTL_BITSET_WORD_SIZE)         // EASTL_BITSET_WORD_SIZE is deprecated, but we temporarily support the ability for the user to specify it. Use EASTL_BITSET_WORD_TYPE_DEFAULT instead.
+#if (EASTL_BITSET_WORD_SIZE == 4)
+#define EASTL_BITSET_WORD_TYPE_DEFAULT uint32_t
+#define EASTL_BITSET_WORD_SIZE_DEFAULT 4
+#else
+#define EASTL_BITSET_WORD_TYPE_DEFAULT uint64_t
+#define EASTL_BITSET_WORD_SIZE_DEFAULT 8
+#endif
+#elif (EA_PLATFORM_WORD_SIZE == 16)                     // EA_PLATFORM_WORD_SIZE is defined in EABase.
+#define EASTL_BITSET_WORD_TYPE_DEFAULT uint128_t
+#define EASTL_BITSET_WORD_SIZE_DEFAULT 16
+#elif (EA_PLATFORM_WORD_SIZE == 8)
+#define EASTL_BITSET_WORD_TYPE_DEFAULT uint64_t
+#define EASTL_BITSET_WORD_SIZE_DEFAULT 8
+#elif (EA_PLATFORM_WORD_SIZE == 4)
+#define EASTL_BITSET_WORD_TYPE_DEFAULT uint32_t
+#define EASTL_BITSET_WORD_SIZE_DEFAULT 4
+#else
+#define EASTL_BITSET_WORD_TYPE_DEFAULT uint16_t
+#define EASTL_BITSET_WORD_SIZE_DEFAULT 2
+#endif
+#endif
 
 
 #endif // Header include guard

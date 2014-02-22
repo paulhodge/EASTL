@@ -94,38 +94,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     // Metrowerks uses #defines in its core C header files to define 
     // the kind of information we need below (e.g. C99 compatibility)
-    #if defined(__MWERKS__)   
-        // Defining the following causes C99 compilers to enable the macros 
-        // associated with the defines. The C99 standard specifies that you 
-        // should define these as such.
-        #ifndef __STDC_LIMIT_MACROS
-            #define __STDC_LIMIT_MACROS
-        #endif
 
-        #ifndef __STDC_CONSTANT_MACROS
-            #define __STDC_CONSTANT_MACROS
-        #endif
-
-        #include <stddef.h>
-    #endif
-
-    #if defined(__SNC__) || defined(EA_PLATFORM_PS3) || defined(__S3E__)
-        #ifndef __STDC_LIMIT_MACROS
-            #define __STDC_LIMIT_MACROS
-        #endif
-
-        #ifndef __STDC_CONSTANT_MACROS
-            #define __STDC_CONSTANT_MACROS
-        #endif
-
-        #include <stdint.h>
-
-        #if !defined(EA_COMPILER_HAS_INTTYPES)
-            #if !defined(__S3E__)
-                #define EA_COMPILER_HAS_INTTYPES
-            #endif
-        #endif
-    #endif
 
     // Determine if this compiler is ANSI C compliant and if it is C99 compliant.
     #if defined(__STDC__)
@@ -227,16 +196,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // the size like postfix does.  Prefix also fails on templates.  So gcc style post fix
     // is still used, but the user will need to use EA_POSTFIX_ALIGN before the constructor parameters.
     // this note by Paul and Frank
-    #if defined(EA_COMPILER_SN) && defined(__GNUC__)  // If using the SN compiler in GCC compatibility mode...
-        #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
-        #define EA_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_PREFIX_ALIGN(n) 
-        #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
-        #define EA_PACKED __attribute__((packed))
-
-    // GCC 2.x doesn't support prefix attributes.
-    #elif defined(__GNUC__) && (__GNUC__ < 3)
+    #if   defined(__GNUC__) && (__GNUC__ < 3)
         #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
         #define EA_ALIGN(n)
         #define EA_PREFIX_ALIGN(n)
@@ -255,18 +215,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     // Metrowerks supports prefix attributes.
     // Metrowerks does not support packed alignment attributes.
-    #elif defined(EA_COMPILER_METROWERKS)
-        #define EA_ALIGN_OF(type) ((size_t)__alignof__(type))
-        #define EA_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_PREFIX_ALIGN(n)
-        #define EA_POSTFIX_ALIGN(n) __attribute__((aligned(n)))
-        #define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
-        #define EA_PACKED
-
-    // Microsoft supports prefix alignment via __declspec, but the alignment value must be a literal number, not just a constant expression.
-    // Contrary to VC7.x and earlier documentation, __declspec(align) works on stack variables. VC8+ (VS2005+) documents correctly.
-    // Microsoft does not support packed alignment attributes; you must use #pragma pack.
-    #elif defined(EA_COMPILER_INTEL) || defined(EA_PLATFORM_XBOX) || (defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1300))
+    #elif defined(EA_COMPILER_INTEL) || defined(CS_UNDEFINED_STRING) || (defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1300))
         #define EA_ALIGN_OF(type) ((size_t)__alignof(type))
         #define EA_ALIGN(n) __declspec(align(n))
         #define EA_PREFIX_ALIGN(n) __declspec(align(n))
@@ -335,7 +284,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //       { ... }
     //
     #ifndef EA_LIKELY
-        #if (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__MWERKS__) // Metrowerks supports __builtin_expect, but with some platforms (e.g. Wii) it appears to ignore it.
+        #if (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(CS_UNDEFINED_STRING) // Metrowerks supports __builtin_expect, but with some platforms (e.g. Wii) it appears to ignore it.
             #if defined(__cplusplus)
                 #define EA_LIKELY(x)   __builtin_expect(!!(x), true)
                 #define EA_UNLIKELY(x) __builtin_expect(!!(x), false) 
@@ -413,7 +362,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //    }
     //
     #ifndef EA_ASSUME
-        #if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later (including XBox, and XBox 360)...
+        #if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later...
             #define EA_ASSUME(x) __assume(x)
         #else
             #define EA_ASSUME(x)
@@ -472,7 +421,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //    EA_WEAK void Function();
     //
     #ifndef EA_WEAK
-        #if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later (including XBox)...
+        #if defined(_MSC_VER) && (_MSC_VER >= 1300) // If VC7.0 and later...
             #define EA_WEAK __declspec(selectany)
             #define EA_WEAK_SUPPORTED 1
         #elif defined(_MSC_VER) || (defined(__GNUC__) && defined(__CYGWIN__))
@@ -514,12 +463,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #ifndef _NATIVE_WCHAR_T_DEFINED
                 #define EA_WCHAR_T_NON_NATIVE 1
             #endif
-        #elif defined(EA_COMPILER_METROWERKS)
-            #if !__option(wchar_type)
-                #define EA_WCHAR_T_NON_NATIVE 1
-            #endif
-        #elif defined(__SNC__) && !defined(__cplusplus) // If compiling C under SNC...
-            #define EA_WCHAR_T_NON_NATIVE 1
         #endif
     #endif
 
@@ -554,7 +497,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #else
                 #define EA_WCHAR_SIZE 4
             #endif
-        #elif defined(EA_PLATFORM_UNIX) || defined(EA_PLATFORM_PS3) || defined(EA_PLATFORM_PS3_SPU)
+        #elif defined(EA_PLATFORM_UNIX) || defined(CS_UNDEFINED_STRING) || defined(CS_UNDEFINED_STRING)
             // It is standard on Unix to have wchar_t be int32_t or uint32_t.
             // All versions of GNUC default to a 32 bit wchar_t, but has been used 
             // with the -fshort-wchar GCC command line option to force it to 16 bit.
@@ -592,12 +535,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_RESTRICT __restrict // GCC defines 'restrict' (as opposed to __restrict) in C99 mode only.
         #elif defined(__ARMCC_VERSION)
             #define EA_RESTRICT __restrict
-        #elif defined(__MWERKS__)
-            #if __option(c99)
-                #define EA_RESTRICT restrict
-            #else
-                #define EA_RESTRICT
-            #endif
         #elif defined(EA_COMPILER_IS_C99)
             #define EA_RESTRICT restrict
         #else
@@ -683,10 +620,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #endif
     #endif
 
-    #if defined(EA_COMPILER_SN) && defined(EA_PLATFORM_PS3) // SN's implementation of always_inline is broken and sometimes fails to link the function.
-        #define EA_PREFIX_FORCE_INLINE  inline
-        #define EA_POSTFIX_FORCE_INLINE 
-    #elif defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
+    #if   defined(EA_COMPILER_GNUC) && (((__GNUC__ * 100) + __GNUC_MINOR__) >= 301)
         #define EA_PREFIX_FORCE_INLINE  inline
         #define EA_POSTFIX_FORCE_INLINE __attribute__((always_inline))
     #else
@@ -783,10 +717,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_PASCAL __stdcall
         #elif defined(EA_COMPILER_GNUC) && defined(EA_PROCESSOR_X86)
             #define EA_PASCAL __attribute__((stdcall))
-        #elif defined(EA_COMPILER_METROWERKS) && defined(EA_PLATFORM_WINDOWS)
-            // You need to make sure you have the Metrowerks "ANSI keywords only' 
-            // compilation option disabled for the pascal keyword to work.
-            #define EA_PASCAL   pascal
         #else
             // Some compilers simply don't support pascal calling convention.
             // As a result, there isn't an issue here, since the specification of 
@@ -801,8 +731,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define EA_PASCAL_FUNC(funcname_and_paramlist)    __stdcall funcname_and_paramlist
         #elif defined(EA_COMPILER_GNUC) && defined(EA_PROCESSOR_X86)
             #define EA_PASCAL_FUNC(funcname_and_paramlist)    __attribute__((stdcall)) funcname_and_paramlist
-        #elif defined(EA_COMPILER_METROWERKS) && defined(EA_PLATFORM_WINDOWS)
-            #define EA_PASCAL_FUNC(funcname_and_paramlist)    pascal funcname_and_paramlist
         #else
             #define EA_PASCAL_FUNC(funcname_and_paramlist)    funcname_and_paramlist
         #endif
@@ -885,7 +813,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     //
     //    #endif
     //
-    #if defined(_MSC_VER) || defined(__MWERKS__) || defined(__GNUC__) || defined(__SNC__) || defined(__ICC) || defined(__ICL)
+    #if defined(_MSC_VER) || defined(CS_UNDEFINED_STRING) || defined(__GNUC__) || defined(CS_UNDEFINED_STRING) || defined(__ICC) || defined(__ICL)
         #define EA_PRAGMA_ONCE_SUPPORTED 1
     #endif
 

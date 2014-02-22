@@ -127,7 +127,6 @@ namespace eastl
     template<size_t size>
     struct aligned_buffer<size, 128>  { EA_PREFIX_ALIGN(128) aligned_buffer_char buffer[size] EA_POSTFIX_ALIGN(128); };
 
-    #if !defined(EA_PLATFORM_PSP) // This compiler fails to compile alignment >= 256 and gives an error.
 
     template<size_t size>
     struct aligned_buffer<size, 256>  { EA_PREFIX_ALIGN(256) aligned_buffer_char buffer[size] EA_POSTFIX_ALIGN(256); };
@@ -144,7 +143,6 @@ namespace eastl
     template<size_t size>
     struct aligned_buffer<size, 4096> { EA_PREFIX_ALIGN(4096) aligned_buffer_char buffer[size] EA_POSTFIX_ALIGN(4096); };
 
-    #endif // EA_PLATFORM_PSP
 
 
 

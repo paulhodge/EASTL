@@ -100,7 +100,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // thing without having to resort to non-portable pragmas. It is possible
 // that the decision to use pragma once here is ill-advised, perhaps because
 // some compilers masquerade as MSVC but don't implement all features.
-#if defined(EA_COMPILER_MSVC) || defined(EA_COMPILER_METROWERKS)
+#if defined(EA_COMPILER_MSVC) || defined(CS_UNDEFINED_STRING)
     #pragma once
 #endif
 
@@ -154,9 +154,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #ifndef __STDC_FORMAT_MACROS
        #define __STDC_FORMAT_MACROS
     #endif
-    #if !defined(__psp__) // The GCC compiler defines standard int types (e.g. uint32_t) but not PRId8, etc.
         #include <inttypes.h> // PRId8, SCNd8, etc.
-    #endif
     #include <stdint.h>   // int32_t, INT64_C, UINT8_MAX, etc.
     #include <math.h>     // float_t, double_t, etc.
     #include <float.h>    // FLT_EVAL_METHOD.
@@ -172,7 +170,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // MinGW GCC (up to at least v4.3.0-20080502) mistakenly neglects to define float_t and double_t.
     // This appears to be an acknowledged bug as of March 2008 and is scheduled to be fixed.
     // Similarly, Android uses a mix of custom standard library headers which don't define float_t and double_t.
-    #if defined(__MINGW32__) || defined(EA_PLATFORM_ANDROID)
+    #if defined(__MINGW32__) || defined(CS_UNDEFINED_STRING)
         #if defined(__FLT_EVAL_METHOD__)  
             #if(__FLT_EVAL_METHOD__== 0)
                 typedef float float_t;
@@ -191,79 +189,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif 
 
     // Airplay's pretty broken for these types (at least as of 4.1)
-    #if defined __S3E__
-
-        typedef float float_t;
-        typedef double double_t;
-
-        #undef INT32_C
-        #undef UINT32_C
-        #undef INT64_C
-        #undef UINT64_C
-        #define  INT32_C(x)  x##L
-        #define UINT32_C(x)  x##UL
-        #define  INT64_C(x)  x##LL
-        #define UINT64_C(x)  x##ULL
-
-        #define EA_PRI_64_LENGTH_SPECIFIER "ll"
-        #define EA_SCN_64_LENGTH_SPECIFIER "ll"
-
-        #define SCNd16        "hd"
-        #define SCNi16        "hi"
-        #define SCNo16        "ho"
-        #define SCNu16        "hu"
-        #define SCNx16        "hx"
-
-        #define SCNd32        "d" // This works for both 32 bit and 64 bit systems, as we assume LP64 conventions.
-        #define SCNi32        "i"
-        #define SCNo32        "o"
-        #define SCNu32        "u"
-        #define SCNx32        "x"
-
-        #define SCNd64        EA_SCN_64_LENGTH_SPECIFIER "d"
-        #define SCNi64        EA_SCN_64_LENGTH_SPECIFIER "i"
-        #define SCNo64        EA_SCN_64_LENGTH_SPECIFIER "o"
-        #define SCNu64        EA_SCN_64_LENGTH_SPECIFIER "u"
-        #define SCNx64        EA_SCN_64_LENGTH_SPECIFIER "x"
-
-        #define PRIdPTR       PRId32 // Usage of pointer values will generate warnings with 
-        #define PRIiPTR       PRIi32 // some compilers because they are defined in terms of 
-        #define PRIoPTR       PRIo32 // integers. However, you can't simply use "p" because
-        #define PRIuPTR       PRIu32 // 'p' is interpreted in a specific and often different
-        #define PRIxPTR       PRIx32 // way by the library.
-        #define PRIXPTR       PRIX32
-
-        #define PRId8     "hhd"
-        #define PRIi8     "hhi"
-        #define PRIo8     "hho"
-        #define PRIu8     "hhu"
-        #define PRIx8     "hhx"
-        #define PRIX8     "hhX"
-
-        #define PRId16        "hd"
-        #define PRIi16        "hi"
-        #define PRIo16        "ho"
-        #define PRIu16        "hu"
-        #define PRIx16        "hx"
-        #define PRIX16        "hX"
-
-        #define PRId32        "d" // This works for both 32 bit and 64 bit systems, as we assume LP64 conventions.
-        #define PRIi32        "i"
-        #define PRIo32        "o"
-        #define PRIu32        "u"
-        #define PRIx32        "x"
-        #define PRIX32        "X"
-
-        #define PRId64        EA_PRI_64_LENGTH_SPECIFIER "d"
-        #define PRIi64        EA_PRI_64_LENGTH_SPECIFIER "i"
-        #define PRIo64        EA_PRI_64_LENGTH_SPECIFIER "o"
-        #define PRIu64        EA_PRI_64_LENGTH_SPECIFIER "u"
-        #define PRIx64        EA_PRI_64_LENGTH_SPECIFIER "x"
-        #define PRIX64        EA_PRI_64_LENGTH_SPECIFIER "X"
-    #endif
 
     // The CodeSourcery definitions of PRIxPTR and SCNxPTR are broken for 32 bit systems.
-    #if defined(__SIZEOF_SIZE_T__) && (__SIZEOF_SIZE_T__ == 4) && (defined(__have_long64) || defined(__have_longlong64) || defined(__S3E__))
+    #if defined(__SIZEOF_SIZE_T__) && (__SIZEOF_SIZE_T__ == 4) && (defined(__have_long64) || defined(__have_longlong64) || defined(CS_UNDEFINED_STRING))
         #undef  PRIdPTR
         #define PRIdPTR "d"
         #undef  PRIiPTR
@@ -290,7 +218,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif
 #else // else we must implement types ourselves.
 
-    #if !defined(__S3E__)
         #if !defined(__BIT_TYPES_DEFINED__) && !defined(__int8_t_defined)
             typedef signed char             int8_t;             //< 8 bit signed integer
         #endif
@@ -305,14 +232,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             typedef unsigned int           uint32_t;            //< 32 bit unsigned integer. This works for both 32 bit and 64 bit platforms, as we assume the LP64 is followed.
             #define __uint32_t_defined
         #endif
-    #endif
 
     // According to the C98/99 standard, FLT_EVAL_METHOD defines control the 
     // width used for floating point _t types.
-    #if defined(__MWERKS__) && ((defined(_MSL_C99) && (_MSL_C99 == 1)) || (__MWERKS__ < 0x4000))
-       // Metrowerks defines FLT_EVAL_METHOD and 
-       // float_t/double_t under this condition.
-    #elif defined(FLT_EVAL_METHOD)
+    #if   defined(FLT_EVAL_METHOD)
         #if (FLT_EVAL_METHOD == 0)
             typedef float           float_t;
             typedef double          double_t;
@@ -329,20 +252,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         typedef double              double_t;
     #endif
 
-   #if defined(EA_PLATFORM_LINUX) || defined(EA_PLATFORM_PS3) || defined(EA_PLATFORM_PS3_SPU)
-       typedef signed long long    int64_t;
-       typedef unsigned long long  uint64_t;
-
-   #elif defined(EA_PLATFORM_SUN) || defined(EA_PLATFORM_SGI)
-       #if (EA_PLATFORM_PTR_SIZE == 4)
-           typedef signed long long    int64_t;
-           typedef unsigned long long  uint64_t;
-       #else
-           typedef signed long         int64_t;
-           typedef unsigned long       uint64_t;
-       #endif
-
-   #elif defined(EA_PLATFORM_WINDOWS) || defined(EA_PLATFORM_XBOX) || defined(EA_PLATFORM_XENON) || defined(EA_PLATFORM_MAC)
+   #if   defined(EA_PLATFORM_WINDOWS) || defined(CS_UNDEFINED_STRING) || defined(CS_UNDEFINED_STRING) || defined(EA_PLATFORM_MAC)
        #if defined(EA_COMPILER_MSVC) || defined(EA_COMPILER_BORLAND)  || defined(EA_COMPILER_INTEL)
            typedef signed __int64      int64_t;
            typedef unsigned __int64    uint64_t;
@@ -350,7 +260,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
            typedef long long           int64_t;
            typedef unsigned long long  uint64_t;
        #endif
-   #elif defined(EA_PLATFORM_AIRPLAY)
    #else
        typedef signed long long    int64_t;
        typedef unsigned long long  uint64_t;
@@ -399,13 +308,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define  UINT8_C(x)   uint8_t(x)
             #define  INT16_C(x)   int16_t(x)
             #define UINT16_C(x)  uint16_t(x)     // Possibly we should make this be uint16_t(x##u). Let's see how compilers react before changing this.
-            #if defined(EA_PLATFORM_PS3)         // PS3 defines long as 64 bit, so we cannot use any size suffix.
-                #define  INT32_C(x)  int32_t(x)
-                #define UINT32_C(x)  uint32_t(x)
-            #else                                // Else we are working on a platform whereby sizeof(long) == sizeof(int32_t).
                 #define  INT32_C(x)  x##L
                 #define UINT32_C(x)  x##UL
-            #endif
             #define  INT64_C(x)  x##LL         // The way to deal with this is to compare ULONG_MAX to 0xffffffff and if not equal, then remove the L.
             #define UINT64_C(x)  x##ULL        // We need to follow a similar approach for LL.
         #endif
@@ -490,7 +394,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif // It turns out that some platforms use %q to represent a 64 bit value, but these are not relevant to us at this time.
 
     // Printf format specifiers
-    #if defined(EA_COMPILER_IS_C99) || defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_METROWERKS) // || defined(EA_COMPILER_INTEL) ?
+    #if defined(EA_COMPILER_IS_C99) || defined(EA_COMPILER_GNUC) || defined(CS_UNDEFINED_STRING) // || defined(EA_COMPILER_INTEL) ?
         #define PRId8     "hhd"
         #define PRIi8     "hhi"
         #define PRIo8     "hho"
@@ -544,7 +448,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif
 
     // Scanf format specifiers
-    #if defined(EA_COMPILER_IS_C99) || defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_METROWERKS) // || defined(EA_COMPILER_INTEL) ?
+    #if defined(EA_COMPILER_IS_C99) || defined(EA_COMPILER_GNUC) || defined(CS_UNDEFINED_STRING) // || defined(EA_COMPILER_INTEL) ?
         #define SCNd8     "hhd"
         #define SCNi8     "hhi"
         #define SCNo8     "hho"
@@ -600,7 +504,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // 
 #ifndef BOOL8_T_DEFINED // If the user hasn't already defined this...
     #define BOOL8_T_DEFINED
-    #if defined(EA_COMPILER_MSVC) || defined(EA_COMPILER_METROWERKS) || (defined(EA_COMPILER_INTEL) && defined(EA_PLATFORM_WINDOWS)) || defined(EA_COMPILER_BORLAND)
+    #if defined(EA_COMPILER_MSVC) || defined(CS_UNDEFINED_STRING) || (defined(EA_COMPILER_INTEL) && defined(EA_PLATFORM_WINDOWS)) || defined(EA_COMPILER_BORLAND)
         #if defined(__cplusplus)
             typedef bool bool8_t;
         #else
@@ -664,7 +568,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     // so for all compilers, as size_t may be based on int, long, or long long.
     #if defined(_MSC_VER) && (EA_PLATFORM_PTR_SIZE == 8)
         typedef __int64 ssize_t;
-    #elif !defined(__S3E__)
+    #else
         typedef long ssize_t;
     #endif
 #elif defined(EA_PLATFORM_UNIX) || defined(EA_PLATFORM_MINGW) || defined(__APPLE__) || defined(_BSD_SIZE_T_) // _BSD_SIZE_T_ indicates that Unix-like headers are present, even though it may not be a true Unix platform.
@@ -846,15 +750,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             #define static_assert(expression, description) enum { EA_PREPROCESSOR_JOIN(static_assert_, __LINE__) = 1 / ((!!(expression)) ? 1 : 0) }
         #endif
     #else
-        #if defined(EA_COMPILER_METROWERKS)
-            #if defined(__cplusplus)
-                #define static_assert(expression, description) struct EA_PREPROCESSOR_JOIN(EACTAssertUnused_, __LINE__){ }
-            #else
-                #define static_assert(expression, description) enum { EA_PREPROCESSOR_JOIN(static_assert_, __LINE__) = 1 / ((!!(expression)) ? 1 : 0) }
-            #endif
-        #else
             #define static_assert(expression, description)
-        #endif
     #endif
 #endif
 

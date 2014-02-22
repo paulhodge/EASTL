@@ -68,9 +68,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(push)           // VC++ generates a bogus warning that you cannot code away.
     #pragma warning(disable: 4619)  // There is no warning number 'number'.
     #pragma warning(disable: 4217)  // Member template functions cannot be used for copy-assignment or copy-construction.
-#elif defined(__SNC__)
-    #pragma control %push diag
-    #pragma diag_suppress=187       // Pointless comparison of unsigned integer with zero
 #endif
 
 
@@ -608,8 +605,6 @@ namespace eastl
 
 #if defined(_MSC_VER)
     #pragma warning(pop)
-#elif defined(__SNC__)
-    #pragma control %pop diag
 #endif
 
 
