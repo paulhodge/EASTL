@@ -352,6 +352,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #  endif
 
+// 1800 is VS12 (2013) which appears to already have these.
+#if defined(_MSC_VER) && _MSC_VER >= 1800
+#define INT8_MAX_DEFINED
+#define INT8_C_DEFINED
+#endif
+
 
     // IBM
 #elif defined(__xlC__)
