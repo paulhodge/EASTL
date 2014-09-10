@@ -496,7 +496,8 @@ namespace eastl
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(EASTL_DEBUG) && !defined(EASTL_CT_ASSERT)
+#if !defined(EASTL_CT_ASSERT)
+#if defined(EASTL_DEBUG)
     template <bool>  struct EASTL_CT_ASSERTION_FAILURE;
     template <>      struct EASTL_CT_ASSERTION_FAILURE<true>{ enum { value = 1 }; }; // We create a specialization for true, but not for false.
     template <int x> struct EASTL_CT_ASSERTION_TEST{};
@@ -516,6 +517,7 @@ namespace eastl
     #endif
 #else
     #define EASTL_CT_ASSERT(expression)
+#endif
 #endif
 
 
