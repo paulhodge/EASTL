@@ -352,8 +352,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #  endif
 
-// 1800 is VS12 (2013) which appears to already have these.
-#if defined(_MSC_VER) && _MSC_VER >= 1800
+// 1700 is VC11 (VS2012) which appears to already have these.
+#if defined(_MSC_VER) && _MSC_VER >= 1700
 #define INT8_MAX_DEFINED
 #define INT8_C_DEFINED
 #endif
