@@ -327,7 +327,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  define EA_ALIGN(n) CLANG_ALIGNED(n)
 #  define EA_PREFIX_ALIGN(n)
 #  define EA_POSTFIX_ALIGN(n) CLANG_ALIGNED(n)
-#  define EA_ALIGNED(variable_type, variable, n) variable_type variable __attribute__((aligned(n)))
+#  define EA_ALIGNED(variable_type, variable, n) variable_type variable CLANG_ALIGNED(n)
 #  define EA_PACKED CLANG_PACKED
 
         // Make sure we get no macro naming conflicts
